@@ -1,0 +1,46 @@
+## Saumitra Tiwari
+
+## Problem Answers:
+1. Briefly explain why the output is what it is – what is happening?
+- The resulting output from the first run is this:
+- 0Yo!1Yo!Yo!2Yo!Yo!Yo!3Yo!Yo!Yo!Yo!4Yo!Yo!Yo!Yo!Yo!5Yo!Yo!Yo!Yo!Yo!5
+- We expect to see this output is because in each iteration the parent process creates one child and that child immediately exists out of the loop because fork() returns 0 which breaks the while condition printing the current copied i value from the parent process. On the other hand the parent process waits for the child process to finish before printing Yo! and increamenting the i value. Ideally the parent process should always print Yo! only once but it prints it multiple times because stdout buffer on the main process is not flushed.
+
+2. Now that you’ve closely followed the program running, how has your understanding of what is happening changed?
+- I think it is doing the same thing from what I expected it to do and provided explanation in my previous response.
+
+3. What do you observe?
+- 2 childparent
+- 998 parentchild
+4. Do you observe any changes?  What is your explanation for this?
+- Using printf without flushing the stdout yields this result:
+- 415 childarent
+- 585 childparent
+- 257309 parent
+- 1 pparent
+
+- Using the printf with fflush(stdout) yields this result:
+- 40 childparent
+- 960 parentchild
+
+- Using write yields this result:
+- 2 childparent
+- 998 parentchild
+
+- It seems like when writing to the file there is always some sort of race condition happening between the parent and the chil process,
+as both of them seem to be writing something at the same time. One thing that does seem to stand out is that write function is better
+at managing the two processes, I think the reason might be due to it takes less time to write it to the file compared to printf. Also one more 
+thing to be noticiable here is that printf when not flushing the buffer seems to also be mixing the data from previously written buffers, yielding
+to more variable results. 
+
+4. How does the behavior of the program change? What if you sleep for 1 second?
+- Adding the sleep significantly made some changes in the outcome of the racecondition between parent and child program.
+- 91 childparent
+- 909 parentchild
+- I think this is because when both the programs are sleeping, overtime one of the processes over takes the other one and the order keeps flipping like
+that making the result something like this. And from what I have noticed increasing the time increases the racecondition of one finishing first while other is waiting.
+
+5. We will be talking about what this means in class, but for now, how do you interpret what you see?
+- It seems like the executable program has access to memory location where it can certain admin access to that memory such as read, write, execute etc. One thing that 
+don't make sense is that there are two processes that are executing withing this program and so I don't know why there are 5 different memory accesses. My first thought was
+that maybe this is because each processes access the memory location independently so maybe that is the reason but I don't think that this is the actual reasoning behind it.
