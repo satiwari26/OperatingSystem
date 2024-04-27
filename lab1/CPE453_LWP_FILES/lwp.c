@@ -15,10 +15,14 @@ ptr_int_t * stackInit;
 
 lwp_context lwp_ptable[LWP_PROC_LIMIT];
 int lwp_procs = 0;  //initially set this to 0
-int lwp_running = 0;    //initially set to 0
+int lwp_running = -1;    //initially set to 0
+int temp_lwp_running = 0;   //initially set to 0
+int lwp_init_run = 0;   //initializing thread index tracker
 
 //global pointer that would point to the scheduler function
 schedfun scheduler = NULL;
+
+#define word_Size 4
 
 /**
  * @brief
@@ -32,12 +36,12 @@ int roundRobin(void){
 
 int new_lwp(lwpfun func, void * argument, size_t stackSize){
 
-    lwp_procs++;    //increament this
+    lwp_procs = lwp_procs + 1;    //increament this
     if(lwp_procs == 1){ //if lwps currently is 1, current running lwp = 0
-        lwp_running = 0;
+        lwp_init_run = 0;
     }
     else{   //else increament this
-        lwp_running++;
+        lwp_init_run++;
     }
 
     lwp_context contextInfo;
@@ -48,11 +52,11 @@ int new_lwp(lwpfun func, void * argument, size_t stackSize){
     basePTR = NULL;
 
     //allocating stack for the thread
-    stackInit = (ptr_int_t*)malloc(stackSize * sizeof(ptr_int_t));
+    stackInit = (ptr_int_t*)malloc(stackSize * word_Size);
 
     contextInfo.stack = (ptr_int_t *)stackInit; //set the stack ptr to current ptr
 
-    stackPTR = stackInit + ((stackSize * sizeof(ptr_int_t)) - 1);   //move the stack pointer to the top of the stack and push content in reverse order
+    stackPTR = stackInit + ((stackSize * word_Size) - 1);   //move the stack pointer to the top of the stack and push content in reverse order
 
     //pusing the args in the stack
     *stackPTR = (ptr_int_t)argument;
@@ -61,7 +65,7 @@ int new_lwp(lwpfun func, void * argument, size_t stackSize){
     stackPTR--;
 
     //push some fake lwp_exit address
-    *stackPTR = 0xDEADBEEF;
+    *stackPTR = (ptr_int_t)lwp_exit;
 
     //move the pointer down
     stackPTR--;
@@ -88,7 +92,7 @@ int new_lwp(lwpfun func, void * argument, size_t stackSize){
     contextInfo.sp = (ptr_int_t *)stackPTR;
 
     //add the context to lwp_table
-    lwp_ptable[lwp_running] = contextInfo;
+    lwp_ptable[lwp_init_run] = contextInfo;
 
     return contextInfo.pid;
 }
@@ -98,7 +102,10 @@ int new_lwp(lwpfun func, void * argument, size_t stackSize){
  * start the thread
 */
 void lwp_start(){
-    lwp_running = 0;    //initially start with the 1st thread
+    if(temp_lwp_running < 0){
+        temp_lwp_running = 0;
+    }
+    lwp_running = temp_lwp_running;    //initially start with the 1st thread
     SAVE_STATE();   //save the real context of the main thread
     GetSP(temp_st_ptr); //save the real stack pointer for later access
     SetSP(lwp_ptable[lwp_running].sp);  //scheduling lwp process to run and switching to its stack
@@ -114,6 +121,8 @@ void lwp_stop(){
     GetSP(lwp_ptable[lwp_running].sp);  //save the lwp thread stack
     SetSP(temp_st_ptr); //set the main thread back with its stack
     RESTORE_STATE();    //starts popping all the general non-floating register from stack to execute the program
+    temp_lwp_running = lwp_running;
+    lwp_running = -1;
 }
 
 /**
@@ -121,7 +130,10 @@ void lwp_stop(){
  * returns the pid of the current running thread
 */
 int lwp_getpid(){
-    return lwp_running;
+    if(lwp_running < 0){
+        return lwp_running; //returns the invalid value
+    }
+    return (lwp_ptable[lwp_running].pid);
 }
 
 /**
@@ -166,7 +178,6 @@ void lwp_exit(){
         free(lwp_ptable[lwp_running].stack);    //deallocate the memory
         int i;
         for(i = lwp_running + 1; i < lwp_procs; i++){
-            lwp_ptable[i].pid = (lwp_ptable[i].pid) - 1;  //reduce the pid number as we are also reducing the index
             lwp_ptable[i - 1] = lwp_ptable[i];  //set the curr element to prev element
         }
         lwp_procs--;    //reduce the number of procs

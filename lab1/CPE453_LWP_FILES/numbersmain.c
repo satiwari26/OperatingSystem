@@ -59,8 +59,7 @@ int main(int argc, char *argv[]){
     new_lwp(indentnum,(void*)i,INITIALSTACK);
   }
 
-  lwp_start();                     /* returns when the last lwp exits */
-
+  lwp_start();                     /* returns when the last lwp exits */  
   printf("Back from LWPS.\n");
   return 0;
 }
@@ -76,9 +75,9 @@ static void indentnum(void *num) {
     printf("%*"PTR_INT_T_FMT"\n",(int)howfar*5,howfar);
     lwp_yield();                /* let another have a turn */
   }
-  lwp_exit();                   /* bail when done.  This should
-                                 * be unnecessary if the stack has
-                                 * been properly prepared
-                                 */
+  // lwp_exit();                   /* bail when done.  This should
+                                //  * be unnecessary if the stack has
+                                //  * been properly prepared
+                                //  */
 }
 
