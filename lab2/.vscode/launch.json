@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "args": ["job-file.txt", "-p", "SRTN"],
+            "args": ["job-file.txt", "-p", "RR", "-q", "4"],
             "console": "integratedTerminal"
         }
     ]

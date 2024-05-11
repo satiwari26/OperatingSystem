@@ -1,0 +1,50 @@
+## Name
+1. Saumitra Tiwari
+2. Junior Perez
+
+## Execution instruction
+- Execute this with python3
+
+## Answer to the questions
+1. For what types of workloads does SRTN deliver the same turnaround times as FIFO?
+- If all the processes have the same bursts time then all the process would be scheduled based on how they arrive. Which is exactly how FIFO would schedule them therefore delivering the same turnaround time.
+2. For what types of workloads and quantum lengths does SRTN deliver the same response times as RR?
+- if the burst time is less than or equal to the quantum time and each process have same burst time, then all the process would be scheduled in the same manner, outputting the same resposne time.
+3. What happens to response time with SRTN as job lengths increase? Can you use the simulator to demonstrate the trend?
+    SRTN
+    Process         arrival         burst
+
+    P0              T=0.0           2.0T
+    P1              T=1.0           4.0T
+    P2              T=2.0           6.0T
+    P3              T=3.0           8.0T
+    P4              T=4.0           10.0T
+
+    [P0][P0][P1][P1][P1][P1][P2][P2][P2][P2][P2][P2][P3][P3][P3][P3][P3][P3][P3][P3][P4][P4][P4][P4][P4][P4][P4][P4][P4][P4]
+    T=0             T=4             T=8             T=12            T=16            T=20            T=24            T=28
+
+    Process         wait            turnaround
+
+    P0              T=0.0           2.0T
+    P1              T=1.0           5.0T
+    P2              T=4.0           10.0T
+    P3              T=9.0           17.0T
+    P4              T=16.0          26.0T
+
+    Average wait: 6.0
+    Average turn around: 12.0
+
+    The turnaround time also increases with each processes, and each process is scheduled in FIFO order making no difference in turnaround time and wait time as compared to FIFO.
+
+4. What happens to response time with RR as quantum lengths increase? Can you write an equation that gives the worst-case response time, given N jobs?
+
+- Assuming each job arrives at the same time.
+- the quantum time is given by Q
+
+    if the burst-time B is less than the Q
+    Response time = B
+
+    if B is greater than Q
+    Response time  = (N - 1) * Q + B
+
+    Worse case scenario = When Q is large and (N - 1) is large and B is also large

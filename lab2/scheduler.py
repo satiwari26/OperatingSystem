@@ -117,11 +117,6 @@ def SRTN_scheduler():
     # sort the job based on the arrival time and if they have same arrival time sort it based on their run time
     jobs.sort(key=lambda x: (x.arrival_time, x.run_time))
 
-    for job in jobs:
-        print("job number: ", job.job_number, "job burst time: ", job.run_time, "Job arrival time", job.arrival_time)
-
-    print("\n\n\n")
-
     # temp copy of jobs
     temp_jobs = copy.deepcopy(jobs)
 
@@ -133,6 +128,7 @@ def SRTN_scheduler():
     wait_time = 0
     total_turn_around_time = 0
     total_wait_time = 0
+    timing_list = []
     
     while(len(jobs) > 0): # if there are jobs in the list
 
@@ -165,18 +161,25 @@ def SRTN_scheduler():
                     total_wait_time += wait_time
                     break
             
-            print("Job %3d -- Turnaround %3.2f  Wait %3.2f" % (current_job.job_number, turn_around_time, wait_time))
+            job_info = {"job_number": current_job.job_number, "turnaround": turn_around_time, "wait": wait_time}
+            timing_list.append(job_info)
 
             jobs.pop(current_job_index)
             if(len(jobs) > 0):
                 current_job = jobs[0] # update the current job
         else:
             jobs[current_job_index] = current_job
+
+    sorted_timing_list = sorted(timing_list, key=lambda x: x["job_number"])
+    for j in sorted_timing_list:
+        print("Job %3d -- Turnaround %3.2f  Wait %3.2f" % (j["job_number"], j["turnaround"], j["wait"]))
     
     print("Average -- Turnaround %.2f  Wait %.2f" % (total_turn_around_time/len(temp_jobs), total_wait_time/len(temp_jobs)))
 
 
-
+def RR_scheduler(quantum):
+    global jobs
+    timer = 0
 
 
 def parseArguments():
@@ -206,6 +209,8 @@ def main():
         SRTN_scheduler()
     elif(algorithm == "SJN"):  # non-preamptive version
         SJN_scheduler()
+    elif(algorithm == "RR"):  # non-preamptive version
+        RR_scheduler(quantum)
 
 
 
