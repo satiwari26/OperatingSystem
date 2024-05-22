@@ -2,8 +2,11 @@
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
+#include <string>
 
 using namespace std;
+
+#define TLB_SIZE 16
 
 /**
  * @brief
@@ -14,13 +17,30 @@ struct frameSize{
 };
 
 struct pageStruct{
-    uint32_t frameNumber;
+    int frameNumber;
     uint8_t present : 1;    //a present bit for keeping track of the validation
+    pageStruct(){
+        this->frameNumber = -1;
+        this->present = 0;
+    }
 };
 
+/**
+ * @brief
+ * algorithm to be used
+*/
+enum evictAlgorithm{FIFO, LRU, OPT};
+
+//default frame evict algorithm
+evictAlgorithm algorithm = FIFO;
+
 struct TLBStruct{
-    uint32_t pageNumber;
-    uint32_t frameNumber;
+    int pageNumber;
+    int frameNumber;
+    TLBStruct(){
+        this->frameNumber = -1;
+        this->pageNumber = -1;
+    }
 };
 
 struct virtualMemInfo{
@@ -32,7 +52,7 @@ struct virtualMemInfo{
     float tlbHitRate;
 };
 
-//TLB of size 16 entries
+//TLB of size TLB_SIZE entries
 vector<TLBStruct> TLB;
 
 //Page table 2^8(256) entries
@@ -103,10 +123,13 @@ void updateEntryInfo(){
  * performs the check in the TBL quickly and returns valid index
  * returns -1 if valid entry not found
 */
-int TLB_Check(uint32_t pageIndexNumber){
+int TLB_Check(int pageIndexNumber){
     int indexNum = -1;
     for(u_int i=0; i<TLB.size();i++){
         indexNum = (TLB[i].pageNumber == pageIndexNumber) ? i : -1;
+        if(indexNum > -1){
+            return indexNum;
+        }
     }
     return indexNum;
 }
@@ -127,8 +150,8 @@ void printFrameContent(const frameSize& frame){
  * calculates the virtual mem info
 */
 void calculateVirtualMemInfo(){
-    memInfo.pageFaultRate = (memInfo.pageFault/memInfo.numTransAddress);
-    memInfo.tlbHitRate = (memInfo.tlbHits/memInfo.numTransAddress);
+    memInfo.pageFaultRate = ((float)memInfo.pageFault/memInfo.numTransAddress);
+    memInfo.tlbHitRate = ((float)memInfo.tlbHits/memInfo.numTransAddress);
 }
 
 /**
@@ -142,6 +165,46 @@ void printVirtualMemInfo(){
     printf("TLB Hits = %d\n", memInfo.tlbHits);
     printf("TLB Misses = %d\n", memInfo.tlbMisses);
     printf("TLB Hit Rate = %.3f\n", memInfo.tlbHitRate);
+}
+
+/**
+ * @brief
+ * performs eviction based on the fifo algorithm
+*/
+void FIFO_eviction(frameSize frame, int pageIndexNumber){
+    //invalidate the entry in the page table
+    for(uint i=0; i < pageTable.size(); i++){
+        if(pageTable[i].frameNumber == 0){  //0 frame b/c of FIFO
+            pageTable[i].present = 0;
+            //also remove that element from the tlb if it exists
+            for(uint j=0; j < TLB.size(); j++){
+                if(TLB[j].pageNumber == (int)i){
+                    TLB.erase(TLB.begin() + j);
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    //add the element to the physical memory and reupdate the page table and tlb
+    physMem.push_back(frame);
+    pageTable[pageIndexNumber].frameNumber = (physMem.size() - 1);
+    pageTable[pageIndexNumber].present = 1;
+
+    //add the entry in the tlb
+    TLBStruct mapPage;
+    mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
+    mapPage.pageNumber = pageIndexNumber;
+    if(TLB.size() == TLB_SIZE){
+        TLB.erase(TLB.begin()); //remove the front most element
+        //add the mapPage to the tlb
+        TLB.push_back(mapPage);
+    }
+    //tbl has space add the element at the end of it
+    else{
+        TLB.push_back(mapPage);
+    }
 }
 
 /**
@@ -171,7 +234,7 @@ void performFetching(uint phyEntrySize){
                 mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
                 mapPage.pageNumber = pageIndexNumber;
                 //tlb size is full - update (FIFO)
-                if(TLB.size() == 16){
+                if(TLB.size() == TLB_SIZE){
                     TLB.erase(TLB.begin()); //remove the front most element
                     //add the mapPage to the tlb
                     TLB.push_back(mapPage);
@@ -201,7 +264,7 @@ void performFetching(uint phyEntrySize){
                 mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
                 mapPage.pageNumber = pageIndexNumber;
                 //tlb size is full - update (FIFO)
-                if(TLB.size() == 16){
+                if(TLB.size() == TLB_SIZE){
                     TLB.erase(TLB.begin()); //remove the front most element
                     //add the mapPage to the tlb
                     TLB.push_back(mapPage);
@@ -216,7 +279,9 @@ void performFetching(uint phyEntrySize){
             }
             //physical memory is full - perform eviction based on the algorithm
             else{
-                printf("physical mem is full waiting for response\n");
+                if(algorithm == FIFO){
+                    FIFO_eviction(backingStore[pageIndexNumber], pageIndexNumber);
+                }
             }
         }
     }
@@ -242,7 +307,7 @@ int main(){
     }
 
     //temp size for the physical memory
-    uint phyEntrySize = 10;
+    uint phyEntrySize = 5;
 
     //update entries based on the file input
     updateEntryInfo();
