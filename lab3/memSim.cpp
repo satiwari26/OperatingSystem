@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdio.h>
-#include <string>
+#include <string.h>
 
 using namespace std;
 
@@ -43,6 +43,19 @@ struct TLBStruct{
     }
 };
 
+struct OPT_struct{
+    int pageNumber;
+    int frameNumber;
+    int indexNumber;
+    int prevIndexNumber;
+    OPT_struct(){
+        this->frameNumber = -1;
+        this->pageNumber = -1;
+        this->indexNumber = -1;
+        this->prevIndexNumber = -1;
+    }
+};
+
 struct virtualMemInfo{
     uint numTransAddress;
     uint pageFault;
@@ -58,6 +71,12 @@ vector<TLBStruct> TLB;
 //Page table 2^8(256) entries
 vector<pageStruct> pageTable(256);
 
+//LRU data-structure
+vector<TLBStruct> LRU_Record;
+
+//OPT data-structure
+vector<OPT_struct> OPT_Record;
+
 //physical memory table - entries dynamically allocated
 vector<frameSize>physMem; 
 
@@ -72,19 +91,11 @@ virtualMemInfo memInfo;
 
 /**
  * @brief
- * parses the users command based on their input
-*/
-void parseCommands(){
-    return;
-}
-
-/**
- * @brief
  * read the ref instruction from the file
  * read the binary backing store information in the 
 */
-void updateEntryInfo(){
-    FILE * ref_seq_file =  fopen("./fifo1.txt", "r");
+void updateEntryInfo(const char * reference_sequence_file){
+    FILE * ref_seq_file =  fopen(reference_sequence_file, "r");
     if (ref_seq_file == NULL) {
         printf("Failed to open the file.\n");
         exit(0);
@@ -209,6 +220,167 @@ void FIFO_eviction(frameSize frame, int pageIndexNumber){
 
 /**
  * @brief
+ * data struct that keeps track of addresses and updates it based on the frequency
+*/
+void LRU_rec(int frameNumber, int pageNumber){
+    //check if the pageNumber exist on the list - remove it from that position
+    for(uint i=0; i < LRU_Record.size(); i++){
+        if(LRU_Record[i].pageNumber == pageNumber){
+            LRU_Record.erase(LRU_Record.begin() + i);
+        }
+    }
+
+    //pushing it on top of the list
+    TLBStruct tempTLB;
+    tempTLB.frameNumber = frameNumber;
+    tempTLB.pageNumber = pageNumber;
+    LRU_Record.push_back(tempTLB);
+}
+
+/**
+ * @brief
+ * LRU eviction algorithm
+*/
+void LRU_eviction(frameSize frame, int pageIndexNumber){
+    //remove the element based on the LRU__rec
+    pageTable[LRU_Record[0].pageNumber].present = 0;    //invalidate the page table based on LRU
+    //update the TLB
+    for(uint i =0; i < TLB.size(); i++){
+        if(LRU_Record[0].pageNumber == TLB[i].pageNumber){
+            TLB.erase(TLB.begin() + i);
+            break;
+        }
+    }
+
+    //add the frame to the physical memory
+    physMem[LRU_Record[0].frameNumber] = frame;
+    //update the pageTable based on the pageIndexNumber
+    pageTable[pageIndexNumber].present = 1;
+    pageTable[pageIndexNumber].frameNumber = LRU_Record[0].frameNumber;
+    //add the element to the TLB
+    TLBStruct tempTLB;
+    tempTLB.frameNumber = LRU_Record[0].frameNumber;
+    tempTLB.pageNumber = pageIndexNumber;
+    TLB.push_back(tempTLB);
+    
+    //update the LRU_record based on this request
+    LRU_Record.erase(LRU_Record.begin());
+    LRU_Record.push_back(tempTLB);
+    
+}
+
+/**
+ * @brief
+ * add element to the OPT struct until the frame array is fill
+*/
+void OPT_update(int frameNumber, int pageIndexNumber, int addressIndex){
+    OPT_struct tempStruct;
+    tempStruct.frameNumber = frameNumber;
+    tempStruct.indexNumber = addressIndex;
+    tempStruct.prevIndexNumber = addressIndex;
+    tempStruct.pageNumber = pageIndexNumber;
+
+    OPT_Record.push_back(tempStruct);
+}
+
+/**
+ * @brief
+ * OPT replacement based on the 
+*/
+void OPT_eviction(frameSize frame, int pageIndexNumber, int currentAddressIndex){
+    //for each instruction currently in frame check their next indexes
+    for(uint i = 0; i < OPT_Record.size(); i++){
+        for(uint j = currentAddressIndex; j < reference_sequence.size(); j++){
+            int tempPageNumber = (reference_sequence[j] >> 8) & 0xFF;
+            if(OPT_Record[i].pageNumber == tempPageNumber){
+                OPT_Record[i].indexNumber = j;
+                break;
+            }
+        }
+    }
+
+    //performing the eviction
+    for(uint i=0; i< OPT_Record.size(); i++){
+        if(OPT_Record[i].indexNumber < currentAddressIndex){    //no future address evict this instantly
+            pageTable[OPT_Record[i].pageNumber].present = 0;
+            physMem[OPT_Record[i].frameNumber] = frame;
+            pageTable[pageIndexNumber].present = 1;
+            pageTable[pageIndexNumber].frameNumber = OPT_Record[i].frameNumber;
+
+            //update the tlb
+            for(uint t = 0; t < TLB.size(); t++){
+                if(TLB[t].pageNumber == OPT_Record[i].pageNumber){
+                    TLB.erase(TLB.begin() + t);
+                    break;
+                }
+            }
+            TLBStruct mapPage;
+            mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
+            mapPage.pageNumber = pageIndexNumber;
+            TLB.push_back(mapPage);
+
+            OPT_struct tempOPT;
+            tempOPT.pageNumber = pageIndexNumber;
+            tempOPT.indexNumber = currentAddressIndex;
+            tempOPT.prevIndexNumber = currentAddressIndex;
+            tempOPT.frameNumber = OPT_Record[i].frameNumber;
+
+            //update all other OPT index
+            for(uint a=0; a<OPT_Record.size(); a++){
+                OPT_Record[a].indexNumber = OPT_Record[a].prevIndexNumber;
+            }
+
+            //update the current OPT
+            OPT_Record[i] = tempOPT;
+            return;
+        }
+    }
+
+    //if there exist the future addresses - then evict the one with the greatest index value
+    OPT_struct maxIndexOPT;
+    int maxOPTindexVal = 0;
+    for(uint i=0; i<OPT_Record.size(); i++){
+        if(OPT_Record[i].indexNumber > maxIndexOPT.indexNumber){
+            maxIndexOPT = OPT_Record[i];
+            maxOPTindexVal = i;
+        }
+    }
+
+    //evict the address with the greatest index
+    pageTable[maxIndexOPT.pageNumber].present = 0;
+    physMem[maxIndexOPT.frameNumber] = frame;
+    pageTable[pageIndexNumber].present = 1;
+    pageTable[pageIndexNumber].frameNumber = maxIndexOPT.frameNumber;
+
+    //update the tlb
+    for(uint t = 0; t < TLB.size(); t++){
+        if(TLB[t].pageNumber == maxIndexOPT.pageNumber){
+            TLB.erase(TLB.begin() + t);
+            break;
+        }
+    }
+    TLBStruct mapPage;
+    mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
+    mapPage.pageNumber = pageIndexNumber;
+    TLB.push_back(mapPage);
+
+    //update all other OPT index
+    for(uint a=0; a<OPT_Record.size(); a++){
+        OPT_Record[a].indexNumber = OPT_Record[a].prevIndexNumber;
+    }
+
+    //update the OPT_rec - (frame number stays same cuz we are evicting the frame value)
+    maxIndexOPT.pageNumber = pageIndexNumber;
+    maxIndexOPT.indexNumber = currentAddressIndex;
+    maxIndexOPT.prevIndexNumber = currentAddressIndex;
+    maxIndexOPT.frameNumber = OPT_Record[maxOPTindexVal].frameNumber;
+
+    OPT_Record[maxOPTindexVal] = maxIndexOPT;
+    return;
+}
+
+/**
+ * @brief
  * performs the fetching of the instruction for reference_sequence
 */
 void performFetching(uint phyEntrySize){
@@ -223,6 +395,13 @@ void performFetching(uint phyEntrySize){
             memInfo.tlbHits += 1;
             printf("%d, %d, %d, ",reference_sequence[i], physMem[TLB[tlbIndex].frameNumber].element[offsetPosition], TLB[tlbIndex].frameNumber);
             printFrameContent(physMem[TLB[tlbIndex].frameNumber]);
+
+            //update the LRU_rec
+            LRU_rec(TLB[tlbIndex].frameNumber, TLB[tlbIndex].pageNumber);
+
+            //add the OPT struct until frame size is full
+            OPT_update(TLB[tlbIndex].frameNumber, TLB[tlbIndex].pageNumber, i);
+
         }
         //if tlb miss, check page table for valid entry
         else{
@@ -246,6 +425,12 @@ void performFetching(uint phyEntrySize){
 
                 printf("%d, %d, %d, ",reference_sequence[i], physMem[pageTable[pageIndexNumber].frameNumber].element[offsetPosition], pageTable[pageIndexNumber].frameNumber);
                 printFrameContent(physMem[pageTable[pageIndexNumber].frameNumber]);
+
+                //update the LRU_rec
+                LRU_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
+
+                //add the OPT struct until frame size is full
+                OPT_update(pageTable[pageIndexNumber].frameNumber, pageIndexNumber, i);
             }
         }
 
@@ -263,6 +448,7 @@ void performFetching(uint phyEntrySize){
                 TLBStruct mapPage;
                 mapPage.frameNumber = pageTable[pageIndexNumber].frameNumber;
                 mapPage.pageNumber = pageIndexNumber;
+
                 //tlb size is full - update (FIFO)
                 if(TLB.size() == TLB_SIZE){
                     TLB.erase(TLB.begin()); //remove the front most element
@@ -276,11 +462,29 @@ void performFetching(uint phyEntrySize){
 
                 printf("%d, %d, %d, ",reference_sequence[i], physMem[pageTable[pageIndexNumber].frameNumber].element[offsetPosition], pageTable[pageIndexNumber].frameNumber);
                 printFrameContent(physMem[pageTable[pageIndexNumber].frameNumber]);
+
+                //update the LRU_rec
+                LRU_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
+
+                //add the OPT struct until frame size is full
+                OPT_update(pageTable[pageIndexNumber].frameNumber, pageIndexNumber, i);
             }
             //physical memory is full - perform eviction based on the algorithm
             else{
                 if(algorithm == FIFO){
                     FIFO_eviction(backingStore[pageIndexNumber], pageIndexNumber);
+                    printf("%d, %d, %d, ",reference_sequence[i], physMem[pageTable[pageIndexNumber].frameNumber].element[offsetPosition], pageTable[pageIndexNumber].frameNumber);
+                    printFrameContent(physMem[pageTable[pageIndexNumber].frameNumber]);
+                }
+                else if(algorithm == LRU){
+                    LRU_eviction(backingStore[pageIndexNumber], pageIndexNumber);
+                    printf("%d, %d, %d, ",reference_sequence[i], physMem[pageTable[pageIndexNumber].frameNumber].element[offsetPosition], pageTable[pageIndexNumber].frameNumber);
+                    printFrameContent(physMem[pageTable[pageIndexNumber].frameNumber]);
+                }
+                else if(algorithm == OPT){
+                    OPT_eviction(backingStore[pageIndexNumber], pageIndexNumber, i);
+                    printf("%d, %d, %d, ",reference_sequence[i], physMem[pageTable[pageIndexNumber].frameNumber].element[offsetPosition], pageTable[pageIndexNumber].frameNumber);
+                    printFrameContent(physMem[pageTable[pageIndexNumber].frameNumber]);
                 }
             }
         }
@@ -291,7 +495,32 @@ void performFetching(uint phyEntrySize){
     printVirtualMemInfo();
 }
 
-int main(){
+int main(int argc, char * argv[]){
+
+    if(argc != 4){
+        printf("Provide the correct number of arguments\n");
+        printf("memSim <reference-sequence-file.txt> <FRAMES> <PRA>\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char * reference_sequence_file = argv[1];
+    //physical memory size
+    uint phyEntrySize = atoi(argv[2]);
+
+    char * textAlgorithm = argv[3];
+
+    if(strcmp(textAlgorithm,"FIFO") == 0){
+        algorithm = FIFO;
+    }
+    else if(strcmp(textAlgorithm,"OPT") == 0){
+        algorithm = OPT;
+    }
+    else if(strcmp(textAlgorithm,"LRU") == 0){
+        algorithm = LRU;
+    }
+    else{
+        printf("Eviction Algorithm provided is unknown.\n");
+    }
 
     //initialize virtualMemInfo
     memInfo.numTransAddress = 0;
@@ -301,16 +530,8 @@ int main(){
     memInfo.tlbHits = 0;
     memInfo.tlbMisses = 0;
 
-    //invalidate the page table for the first time
-    for(u_int i=0; i<pageTable.size();i++){
-        pageTable[i].present = 0;
-    }
-
-    //temp size for the physical memory
-    uint phyEntrySize = 5;
-
     //update entries based on the file input
-    updateEntryInfo();
+    updateEntryInfo(reference_sequence_file);
     memInfo.numTransAddress = reference_sequence.size();
     performFetching(phyEntrySize);
 
