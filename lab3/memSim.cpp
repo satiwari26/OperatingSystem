@@ -77,6 +77,9 @@ vector<TLBStruct> LRU_Record;
 //OPT data-structure
 vector<OPT_struct> OPT_Record;
 
+//FIFO data-struct
+vector<TLBStruct> FIFO_record;
+
 //physical memory table - entries dynamically allocated
 vector<frameSize>physMem; 
 
@@ -185,7 +188,7 @@ void printVirtualMemInfo(){
 void FIFO_eviction(frameSize frame, int pageIndexNumber){
     //invalidate the entry in the page table
     for(uint i=0; i < pageTable.size(); i++){
-        if(pageTable[i].frameNumber == 0){  //0 frame b/c of FIFO
+        if((pageTable[i].frameNumber == FIFO_record[0].frameNumber) && (FIFO_record[0].pageNumber == (int)i)){  //0 frame b/c of FIFO
             pageTable[i].present = 0;
             //also remove that element from the tlb if it exists
             for(uint j=0; j < TLB.size(); j++){
@@ -199,8 +202,8 @@ void FIFO_eviction(frameSize frame, int pageIndexNumber){
     }
 
     //add the element to the physical memory and reupdate the page table and tlb
-    physMem.push_back(frame);
-    pageTable[pageIndexNumber].frameNumber = (physMem.size() - 1);
+    physMem[FIFO_record[0].frameNumber] = frame;
+    pageTable[pageIndexNumber].frameNumber = (FIFO_record[0].frameNumber);
     pageTable[pageIndexNumber].present = 1;
 
     //add the entry in the tlb
@@ -216,6 +219,10 @@ void FIFO_eviction(frameSize frame, int pageIndexNumber){
     else{
         TLB.push_back(mapPage);
     }
+
+    //update the FIFO_record
+    FIFO_record.erase(FIFO_record.begin());
+    FIFO_record.push_back(mapPage);
 }
 
 /**
@@ -235,6 +242,25 @@ void LRU_rec(int frameNumber, int pageNumber){
     tempTLB.frameNumber = frameNumber;
     tempTLB.pageNumber = pageNumber;
     LRU_Record.push_back(tempTLB);
+}
+
+/**
+ * @brief
+ * data struct that keeps track of addresses and updates it based on FIFO
+*/
+void FIFO_rec(int frameNumber, int pageNumber){
+    //check if the pageNumber exist on the list - if it does don't add it
+    for(uint i=0; i < FIFO_record.size(); i++){
+        if(FIFO_record[i].pageNumber == pageNumber){
+            return;
+        }
+    }
+
+    //otherwise add it to the list
+    TLBStruct tempTLB;
+    tempTLB.frameNumber = frameNumber;
+    tempTLB.pageNumber = pageNumber;
+    FIFO_record.push_back(tempTLB);
 }
 
 /**
@@ -399,6 +425,9 @@ void performFetching(uint phyEntrySize){
             //update the LRU_rec
             LRU_rec(TLB[tlbIndex].frameNumber, TLB[tlbIndex].pageNumber);
 
+            //update the FIFO_rec
+            FIFO_rec(TLB[tlbIndex].frameNumber, TLB[tlbIndex].pageNumber);
+
             //add the OPT struct until frame size is full
             OPT_update(TLB[tlbIndex].frameNumber, TLB[tlbIndex].pageNumber, i);
 
@@ -428,6 +457,9 @@ void performFetching(uint phyEntrySize){
 
                 //update the LRU_rec
                 LRU_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
+
+                //update the FIFO_rec
+                FIFO_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
 
                 //add the OPT struct until frame size is full
                 OPT_update(pageTable[pageIndexNumber].frameNumber, pageIndexNumber, i);
@@ -465,6 +497,9 @@ void performFetching(uint phyEntrySize){
 
                 //update the LRU_rec
                 LRU_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
+
+                //update the FIFO_rec
+                FIFO_rec(pageTable[pageIndexNumber].frameNumber, pageIndexNumber);
 
                 //add the OPT struct until frame size is full
                 OPT_update(pageTable[pageIndexNumber].frameNumber, pageIndexNumber, i);

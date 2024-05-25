@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [],
+            "args": ["fifo2.txt", "5", "FIFO"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
