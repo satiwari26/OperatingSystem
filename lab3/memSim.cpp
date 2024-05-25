@@ -534,7 +534,7 @@ int main(int argc, char * argv[]){
 
     if(argc != 4){
         printf("Provide the correct number of arguments\n");
-        printf("memSim <reference-sequence-file.txt> <FRAMES> <PRA>\n");
+        printf("./memSim <reference-sequence-file.txt> <FRAMES> <PRA>\n");
         exit(EXIT_FAILURE);
     }
 

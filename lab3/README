@@ -1,0 +1,12 @@
+## Name:
+- Saumitra Tiwari
+- Junior Perez
+
+## Compiling and execution instruction:
+- Run make
+- ./memSim <reference-sequence-file.txt> <FRAMES> <PRA>
+
+## Other
+- for PRA please make sure that algorithm name is in all-caps.
+example: "FIFO"
+- For BACKING_STORE.bin it is expected that this binary name stays same.
