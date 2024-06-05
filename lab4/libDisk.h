@@ -12,4 +12,8 @@
 */
 FILE * diskFIle;
 
+/**
+ * @brief
+ * opens the disk file and resizes it based on the nBytes provided to it
+*/
 int openDisk(char *filename, int nBytes);
