@@ -1,6 +1,3 @@
-#include <iostream>
-#include <stdio.h>
-#include "libDisk.h"
 #include "tinyFS.h"
 
 using namespace std;
@@ -12,9 +9,10 @@ int main(){
 int tfs_mkfs(char *filename, int nBytes)
 {
     fileDescriptor fd;
+    vector<bool> bitMap(256, false); 
     int numBlocks = nBytes / BLOCKSIZE; /* Maximum number of blocks supported by the tinyFS */
 
-    if ( (fd = openDisk(filename, nBytes)) < SUCCESS)
+    if ((fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
     {
         cerr << "Error: could not open file from disk : " << fd << endl; 
         return fd; // Return the error code stored in the file descriptor
@@ -27,4 +25,8 @@ int tfs_mkfs(char *filename, int nBytes)
         writeBlock((int) fd,  curBlock, zero_bytes);
     }
 
+    // Superblock in the initial unmounted TFS state
+    superblock sb = { TFS_SB_MAGIC_NUM, TFS_SB_ROOTNUM_INIT, TFS_SB_TOTALCT_INIT, 
+                        numBlocks, TFS_SB_EMPTY_BITMAP(numBlocks)};
+    return SUCCESS_MKFS;
 }

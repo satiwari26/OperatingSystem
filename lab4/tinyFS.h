@@ -1,14 +1,46 @@
-#include <stdint.h>
+#include <iostream>
+#include <unordered_map>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <vector>
+
+#include "libDisk.h"
 
 /* use this name for a default disk file name */
 #ifndef DEFAULT_DISK_NAME
 #define DEFAULT_DISK_NAME tinyFSDisk
 #endif
-#ifndef SUCCESS
-#define SUCCESS 0 
+
+/**
+ * TinyFS superblock macros
+*/
+#ifndef TFS_SB_MAGIC_NUM
+#define TFS_SB_MAGIC_NUM 0x5A /* The magic number for the TinyFS */
 #endif
+#ifndef TFS_SB_ROOTNUM_INIT
+#define TFS_SB_ROOTNUM_INIT 0
+#endif
+#ifndef TFS_SB_TOTALCT_INIT
+#define TFS_SB_TOTALCT_INIT 0
+#endif
+#ifndef TFS_SB_EMPTY_BITMAP
+#define TFS_SB_EMPTY_BITMAP(size) std::vector<bool>(size, false) /* An empty bit-map for the initial state of the TFS superblock */
+#endif
+
+/**
+ * TinyFS success/error code macros
+*/
+#ifndef SUCCESS_OPENDISK
+#define SUCCESS_OPENDISK 0  /* Successfully opened disk */      // TODO: move to libDisk.h
+#endif
+#ifndef SUCCESS_MKFS
+#define SUCCESS_MKFS 0 /* Successfully made a file system */
+#endif
+#ifndef ERROR_MKFS
+#define ERROR_MKFS -1000 /* Failed to make a file system */
+#endif
+
 typedef int fileDescriptor;
 
 /**
@@ -25,8 +57,8 @@ typedef struct inode
 }inode;
 
 /**
- * A block that stores metadata about the file system. It is always stored at logical
- * block 0 on the disk. 
+ * A block that stores metadata about the file system. It is always stored at 
+ * logical block 0 on the disk. 
 */
 typedef struct superblock
 {
