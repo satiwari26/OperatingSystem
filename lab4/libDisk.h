@@ -11,6 +11,9 @@
 //disk read related flag
 #define DISK_READ_ERROR -1
 #define DISK_READ_SUCCESS 0
+//disk write related flag
+#define DISK_WRITE_ERROR -1
+#define DISK_WRITE_SUCCESS 0
 
 
 /**

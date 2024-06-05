@@ -123,9 +123,63 @@ int readBlock(int disk, int bNum, void *block){
 }
 
 int writeBlock(int disk, int bNum, void *block){
-    return 0;
+    bool found = false;
+    //check if the disk fd exist in the diskFiles list
+    for(int i = 0; i < (int)diskFiles.size(); i++){
+        if(diskFiles[i] == disk){
+            found = true;
+            break;
+        }
+    }
+    if(!found){
+        return DISK_WRITE_ERROR;
+    }
+    //if the disk file exist, check the size 
+    struct stat fileStat;
+    if (fstat(disk, &fileStat) == -1) {
+        return DISK_WRITE_ERROR;
+    }
+
+    //check if the offset is greater/equal than the actual file size
+    if(fileStat.st_size >= bNum * BLOCKSIZE){
+        return DISK_WRITE_ERROR;
+    }
+
+    //perform the seek in the file for offset and read the block for the data
+    if (lseek(disk, bNum * BLOCKSIZE, SEEK_SET) == -1) {
+        return DISK_WRITE_ERROR;
+    }
+
+    //read the data from the disk based on the BLOCK size
+    int bytesRead = write(disk, (char *)block, BLOCKSIZE);
+    if(bytesRead == -1){
+        return DISK_WRITE_ERROR;
+    }
+
+    //if successfully read the data 
+    return DISK_WRITE_SUCCESS;
 }
 
 void closeDisk(int disk){
+    bool found = false;
+    int fileIndex = 0;
+    //check if the disk fd exist in the diskFiles list
+    for(int i = 0; i < (int)diskFiles.size(); i++){
+        if(diskFiles[i] == disk){
+            found = true;
+            fileIndex = i;
+            break;
+        }
+    }
+    if(!found){
+        return;
+    }
+
+    //close the file using file descriptor
+    if(close(disk) == -1){
+        return;
+    }
+    //remove the file from the list
+    diskFiles.erase(diskFiles.begin() + fileIndex);
     return;
 }
