@@ -1,4 +1,5 @@
 #include "libDisk.h"
+std::vector<int> diskFiles;
 
 int openDisk(char *filename, int nBytes){
     FILE * diskFIle;
@@ -119,4 +120,12 @@ int readBlock(int disk, int bNum, void *block){
 
     //if successfully read the data 
     return DISK_READ_SUCCESS;
+}
+
+int writeBlock(int disk, int bNum, void *block){
+    return 0;
+}
+
+void closeDisk(int disk){
+    return;
 }

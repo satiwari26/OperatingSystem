@@ -17,7 +17,7 @@
  * @brief
  * disk file pointer list for all the open DISKS
 */
-std::vector<int> diskFiles;
+extern std::vector<int> diskFiles;
 
 
 /**
