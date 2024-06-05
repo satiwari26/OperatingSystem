@@ -36,8 +36,10 @@ int openDisk(char *filename, int nBytes){
             return OPEN_DISK_ERROR;
         }
     }
+    
+    return OPEN_DISK_SUCCESS;
+}
 
-
-
-    return 0;
+int readBlock(int disk, int bNum, void *block){
+    
 }
