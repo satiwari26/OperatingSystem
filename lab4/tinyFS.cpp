@@ -4,7 +4,9 @@ using namespace std;
 
 tfs *tinyFS; /* Empty TinyFS */
 
-int main(){
+
+int main()
+{
     printf("Hello world!\n");
 }
 
@@ -24,10 +26,45 @@ int tfs_mkfs(char *filename, int nBytes)
     char zero_bytes[BLOCKSIZE] = { 0 };
     for (int curBlock = 0; curBlock < numBlocks; curBlock++)
     {
-        writeBlock((int) fd,  curBlock, zero_bytes);
+        int result = writeBlock((int) fd,  curBlock, zero_bytes);
+
+        // Return error code from the result, if the system did not successfully write a block to disk
+        if (result < SUCCESS_WRITEDISK)
+        {
+            return result; 
+        }
     }
 
     tinyFS = new tfs(numBlocks);
 
+    // Write the superblock to the disk
+    int sb_result = writeBlock((int) fd, SUPERBLOCK_NUM, (void*) tinyFS->getSuperblock());
+    cout << "size sb:" << sizeof(tinyFS->getSuperblock()) << endl;
+    // Return error code from the result, if the system did not successfully write a block to disk
+    if (sb_result < SUCCESS_WRITEDISK)
+    {
+        return sb_result; 
+    }
+
+    // Initalize the inode list
+    vector<inode> inodeList;
+    inodeList.reserve(INODE_COUNT);
+    for (int i = 0; i < INODE_COUNT; i++)
+    {   
+        inodeList.emplace_back();
+        cout << "size inode num" << i << ": " << sizeof(inodeList[i]) << endl;
+    }
+    
+    // Write inode list to the disk
+    for (int i = 0; i < INODE_COUNT; i++)
+    {
+        int il_result = writeBlock((int) fd, i, inodeList.data());
+        
+        if (il_result < SUCCESS_WRITEDISK)
+        {
+            return il_result; 
+        }
+    }
+   
     return SUCCESS_MKFS;
 }

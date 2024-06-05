@@ -1,3 +1,4 @@
+#include <bitset>
 #include <iostream>
 #include <unordered_map>
 #include <stdbool.h>
@@ -24,8 +25,8 @@
 #ifndef TFS_SB_TOTALCT_INIT
 #define TFS_SB_TOTALCT_INIT 0 /* The initial total file count for the TinyFS superblock */
 #endif
-#ifndef TFS_SB_EMPTY_BITMAP
-#define TFS_SB_EMPTY_BITMAP(size) std::vector<bool>(size, false) /* An empty bit-map for the initial state of the TFS superblock */
+#ifndef TFS_SB_MAPSIZE
+#define TFS_SB_MAPSIZE (BLOCKSIZE - sizeof(int8_t) - (3 * sizeof(int32_t))) * 8 /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
 #endif
 
 /**
@@ -34,12 +35,23 @@
 #ifndef SUCCESS_OPENDISK
 #define SUCCESS_OPENDISK 0  /* Successfully opened disk */      // TODO: move to libDisk.h
 #endif
+#ifndef SUCCESS_WRITEDISK
+#define SUCCESS_WRITEDISK 0  /* Successfully wrote block to disk */      // TODO: move to libDisk.h
+#endif
 #ifndef SUCCESS_MKFS
 #define SUCCESS_MKFS 0 /* Successfully made a file system */
 #endif
 #ifndef ERROR_MKFS
 #define ERROR_MKFS -1000 /* Failed to make a file system */
 #endif
+
+/*****
+ *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS.
+ *****/
+#define INODE_COUNT 16
+#define SUPERBLOCK_NUM 0
+#define INODELIST_BLOCK_NUM 1
+/* END OF TEST VARIABLES/MACROS */
 
 typedef int fileDescriptor;
 
@@ -54,6 +66,10 @@ typedef struct inode
     int32_t f_flags; /* File flags */
     int32_t f_offset; /* Offset where data blocks are stored on disc */
     int64_t f_blksize; /* Number of blocks, in 256-byte chunks, allocated to this file */
+    char reserved[48]; /* Reserved bytes, to fill the inode to be 256 bytes */
+
+    /* Default constructor */
+    inode() : f_inode(0), f_type(0), f_size(0), f_flags(0), f_offset(0), f_blksize(0), reserved{} {}
 }inode;
 
 /**
@@ -66,16 +82,19 @@ typedef struct superblock
     int32_t sb_rootnum; /* Block number for the root directory inode */
     int32_t sb_totalct; /* Total number of files in the file system */
     int32_t sb_freect; /* Number of free data blocks */
-    std::vector<bool> sb_bitmap; /* Bit map for the free blocks */
 
-    /* Constructor */
+    /* Bit map for the free blocks, uses up rest of the space in 
+    this struct to make the superblock 256-bytes size */
+    std::bitset<TFS_SB_MAPSIZE> sb_bitmap;
+
+    /* Default constructor */
     superblock(int numBlocks)
         : sb_magicnum(TFS_SB_MAGIC_NUM), sb_rootnum(TFS_SB_ROOTNUM_INIT), sb_totalct(TFS_SB_TOTALCT_INIT), 
-          sb_freect((int32_t) numBlocks), sb_bitmap(TFS_SB_EMPTY_BITMAP(numBlocks)) {};
+          sb_freect((int32_t) numBlocks), sb_bitmap() {}
 }superblock;
 
 /**
- * TODO: add more and description
+ * TODO: add more and description and finish destructor
 */
 class tfs 
 {
@@ -86,12 +105,19 @@ class tfs
         // Constructor
         tfs(int numBlocks)
             : openInodes(std::unordered_map<fileDescriptor, inode>()), 
-              sb(superblock(numBlocks)) {};
+              sb(superblock(numBlocks)) {}
 
         // Destructor
-        ~tfs()
-        {
+        ~tfs() {}
 
+        std::unordered_map<fileDescriptor, inode> getOpenInodeList()
+        {
+            return this->openInodes;
+        }
+
+        superblock* getSuperblock()
+        {
+            return &this->sb;
         }
 };
 
