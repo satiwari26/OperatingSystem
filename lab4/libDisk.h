@@ -10,7 +10,7 @@
  * @brief
  * disk file pointer availaible to be used throughout the project
 */
-FILE * diskFIle;
+extern FILE * diskFIle;
 
 /**
  * @brief

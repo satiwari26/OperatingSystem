@@ -1,5 +1,7 @@
 #include "libDisk.h"
 
+FILE * diskFIle;
+
 int openDisk(char *filename, int nBytes){
     // if nbytes not perfectly divisible by the block size
     if((nBytes % BLOCKSIZE) != 0){
@@ -26,7 +28,7 @@ int openDisk(char *filename, int nBytes){
         if(access(filename, F_OK) == -1){
             return OPEN_DISK_ERROR;
         }
-        
+
         // if file does exist open it without resizing it
         diskFIle = fopen(filename, "r+");
         //opening the file error
