@@ -4,7 +4,7 @@
 
 /* use this name for a default disk file name */
 #ifndef DEFAULT_DISK_NAME
-#define DEFAULT_DISK_NAME “tinyFSDisk”
+#define DEFAULT_DISK_NAME tinyFSDisk
 #endif
 #ifndef SUCCESS
 #define SUCCESS 0 

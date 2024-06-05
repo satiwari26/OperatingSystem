@@ -25,7 +25,7 @@ int openDisk(char *filename, int nBytes){
         }
 
         //check if the file discriptor exist in the list
-        for(int i = 0; i < diskFiles.size(); i++){
+        for(int i = 0; i < (int)diskFiles.size(); i++){
             if(diskFiles[i] == currFD){
                 existFD = true;
                 break;
@@ -63,7 +63,7 @@ int openDisk(char *filename, int nBytes){
         }
 
         //check if the file discriptor exist in the list
-        for(int i = 0; i < diskFiles.size(); i++){
+        for(int i = 0; i < (int)diskFiles.size(); i++){
             if(diskFiles[i] == currFD){
                 existFD = true;
                 break;
@@ -84,7 +84,7 @@ int openDisk(char *filename, int nBytes){
 int readBlock(int disk, int bNum, void *block){
     bool found = false;
     //check if the disk fd exist in the diskFiles list
-    for(int i = 0; i < diskFiles.size(); i++){
+    for(int i = 0; i < (int)diskFiles.size(); i++){
         if(diskFiles[i] == disk){
             found = true;
             break;
