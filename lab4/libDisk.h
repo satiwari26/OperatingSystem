@@ -1,17 +1,24 @@
 #include <iostream>
 #include <stdio.h>
 #include <unistd.h>
+#include <vector>
+#include <sys/stat.h> 
 #define BLOCKSIZE 256
 
-// disk related flags
+// disk open related flags
 #define OPEN_DISK_ERROR -1
-#define OPEN_DISK_SUCCESS 0
+
+//disk read related flag
+#define DISK_READ_ERROR -1
+#define DISK_READ_SUCCESS 0
+
 
 /**
  * @brief
- * disk file pointer availaible to be used throughout the project
+ * disk file pointer list for all the open DISKS
 */
-extern FILE * diskFIle;
+std::vector<int> diskFiles;
+
 
 /**
  * @brief
