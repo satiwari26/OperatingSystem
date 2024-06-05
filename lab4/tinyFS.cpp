@@ -5,6 +5,5 @@
 using namespace std;
 
 int main(){
-    char * t;
     printf("Hello world!\n");
 }
