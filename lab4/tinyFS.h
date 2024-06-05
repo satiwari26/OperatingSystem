@@ -1,18 +1,42 @@
 #include <stdint.h>
+#include <stdbool.h>
+#include <vector>
 
 /* use this name for a default disk file name */
 #ifndef DEFAULT_DISK_NAME
 #define DEFAULT_DISK_NAME “tinyFSDisk”
 #endif
+#ifndef SUCCESS
+#define SUCCESS 0 
+#endif
 typedef int fileDescriptor;
 
+/**
+ * An inode block to keep track of metadata for each file within TinyFS.
+*/
 typedef struct inode
 {
-    int16_t ftype; /* File type */
-    int32_t fsize; /* Size of the file */
-    int32_t fflags; /* Assorted flags for the file */
-    int32_t fdata_offset; /* Offset where data blocks are stored on disc */
+    int32_t f_inode; /* File inode number */
+    int16_t f_type; /* File type */
+    int32_t f_size; /* File size */
+    int32_t f_flags; /* File flags */
+    int32_t f_offset; /* Offset where data blocks are stored on disc */
+    int64_t f_blksize; /* Number of blocks, in 256-byte chunks, allocated to this file */
 }inode;
+
+/**
+ * A block that stores metadata about the file system. It is always stored at logical
+ * block 0 on the disk. 
+*/
+typedef struct superblock
+{
+    int8_t sb_magicnum; /* The magic number, 0x5A, for TinyFS */
+    int32_t sb_rootnum; /* Block number for the root directory inode */
+    int32_t sb_totalct; /* Total number of files in the file system */
+    int32_t sb_freect; /* Number of free data blocks */
+    std::vector<bool> sb_bit_map; /* Bit map for the free blocks */
+    
+}superblock;
 
 /* Makes an empty TinyFS file system of size nBytes on an emulated libDisk
 disk specified by ‘filename’. This function should use the emulated disk
