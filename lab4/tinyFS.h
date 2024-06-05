@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 /* use this name for a default disk file name */
 #ifndef DEFAULT_DISK_NAME
 #define DEFAULT_DISK_NAME “tinyFSDisk”
@@ -6,7 +8,10 @@ typedef int fileDescriptor;
 
 typedef struct inode
 {
-    inode
+    int16_t ftype; /* File type */
+    int32_t fsize; /* Size of the file */
+    int32_t fflags; /* Assorted flags for the file */
+    int32_t fdata_offset; /* Offset where data blocks are stored on disc */
 }inode;
 
 /* Makes an empty TinyFS file system of size nBytes on an emulated libDisk
