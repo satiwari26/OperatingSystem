@@ -19,10 +19,10 @@
 #define TFS_SB_MAGIC_NUM 0x5A /* The magic number for the TinyFS */
 #endif
 #ifndef TFS_SB_ROOTNUM_INIT
-#define TFS_SB_ROOTNUM_INIT 0
+#define TFS_SB_ROOTNUM_INIT 0 /* The initial root number for the TinyFS superblock */
 #endif
 #ifndef TFS_SB_TOTALCT_INIT
-#define TFS_SB_TOTALCT_INIT 0
+#define TFS_SB_TOTALCT_INIT 0 /* The initial total file count for the TinyFS superblock */
 #endif
 #ifndef TFS_SB_EMPTY_BITMAP
 #define TFS_SB_EMPTY_BITMAP(size) std::vector<bool>(size, false) /* An empty bit-map for the initial state of the TFS superblock */
@@ -66,9 +66,34 @@ typedef struct superblock
     int32_t sb_rootnum; /* Block number for the root directory inode */
     int32_t sb_totalct; /* Total number of files in the file system */
     int32_t sb_freect; /* Number of free data blocks */
-    std::vector<bool> sb_bit_map; /* Bit map for the free blocks */
-    
+    std::vector<bool> sb_bitmap; /* Bit map for the free blocks */
+
+    /* Constructor */
+    superblock(int numBlocks)
+        : sb_magicnum(TFS_SB_MAGIC_NUM), sb_rootnum(TFS_SB_ROOTNUM_INIT), sb_totalct(TFS_SB_TOTALCT_INIT), 
+          sb_freect((int32_t) numBlocks), sb_bitmap(TFS_SB_EMPTY_BITMAP(numBlocks)) {};
 }superblock;
+
+/**
+ * TODO: add more and description
+*/
+class tfs 
+{
+    private:
+        std::unordered_map<fileDescriptor, inode> openInodes; /* A mapping between open inodes in the file system and their associated file descriptor */
+        superblock sb; /* Superblock for the TinyFS file system */
+    public:
+        // Constructor
+        tfs(int numBlocks)
+            : openInodes(std::unordered_map<fileDescriptor, inode>()), 
+              sb(superblock(numBlocks)) {};
+
+        // Destructor
+        ~tfs()
+        {
+
+        }
+};
 
 /* Makes an empty TinyFS file system of size nBytes on an emulated libDisk
 disk specified by ‘filename’. This function should use the emulated disk

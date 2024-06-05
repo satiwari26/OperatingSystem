@@ -2,15 +2,17 @@
 
 using namespace std;
 
+tfs *tinyFS; /* Empty TinyFS */
+
 int main(){
     printf("Hello world!\n");
 }
 
 int tfs_mkfs(char *filename, int nBytes)
 {
-    fileDescriptor fd;
-    vector<bool> bitMap(256, false); 
     int numBlocks = nBytes / BLOCKSIZE; /* Maximum number of blocks supported by the tinyFS */
+
+    fileDescriptor fd;
 
     if ((fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
     {
@@ -25,8 +27,7 @@ int tfs_mkfs(char *filename, int nBytes)
         writeBlock((int) fd,  curBlock, zero_bytes);
     }
 
-    // Superblock in the initial unmounted TFS state
-    superblock sb = { TFS_SB_MAGIC_NUM, TFS_SB_ROOTNUM_INIT, TFS_SB_TOTALCT_INIT, 
-                        numBlocks, TFS_SB_EMPTY_BITMAP(numBlocks)};
+    tinyFS = new tfs(numBlocks);
+
     return SUCCESS_MKFS;
 }
