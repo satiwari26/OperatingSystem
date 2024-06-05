@@ -5,7 +5,7 @@ LDFLAGS =
 # Source files
 LAB4_SRCS = tinyFS.cpp libDisk.cpp
 # Header files
-LAB4_HDRS = libDisk.h
+LAB4_HDRS = libDisk.h tinyFS.h
 
 # Object files
 LAB4_OBJS = $(LAB4_SRCS:.cpp=.o)

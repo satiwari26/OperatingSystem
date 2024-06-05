@@ -26,7 +26,7 @@
 #define TFS_SB_TOTALCT_INIT 0 /* The initial total file count for the TinyFS superblock */
 #endif
 #ifndef TFS_SB_MAPSIZE
-#define TFS_SB_MAPSIZE (BLOCKSIZE - sizeof(int8_t) - (3 * sizeof(int32_t))) * 8 /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
+#define TFS_SB_MAPSIZE 248 * 8 /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
 #endif
 
 /**
@@ -55,22 +55,41 @@
 
 typedef int fileDescriptor;
 
+/** @brief
+ * struct of dataBlock
+*/
+typedef struct dataBlock{
+    dataBlock * nextDataBlock;
+    char dataBlock[248];
+};
+
 /**
  * An inode block to keep track of metadata for each file within TinyFS.
 */
 typedef struct inode
 {
     int32_t f_inode; /* File inode number */
-    int16_t f_type; /* File type */
-    int32_t f_size; /* File size */
-    int32_t f_flags; /* File flags */
-    int32_t f_offset; /* Offset where data blocks are stored on disc */
-    int64_t f_blksize; /* Number of blocks, in 256-byte chunks, allocated to this file */
-    char reserved[48]; /* Reserved bytes, to fill the inode to be 256 bytes */
+    dataBlock * first_dataBlock; // pointer to the data block of the current file
+    int32_t f_size; //contains the data size of the file
+    int32_t N_dataBlocks;   //contains the number of datablock information
 
     /* Default constructor */
-    inode() : f_inode(0), f_type(0), f_size(0), f_flags(0), f_offset(0), f_blksize(0), reserved{} {}
+    inode(){
+        this->first_dataBlock = NULL;
+        this->f_size = 0;
+        this->f_inode = 0;
+    }
 }inode;
+
+/**
+ * @brief
+ * struct of bitMap
+*/
+typedef struct bitMap{
+    bitMap * nextBitMap;
+    std::bitset<TFS_SB_MAPSIZE> bitmap;
+};
+/**
 
 /**
  * A block that stores metadata about the file system. It is always stored at 
@@ -79,18 +98,21 @@ typedef struct inode
 typedef struct superblock
 {
     int8_t sb_magicnum; /* The magic number, 0x5A, for TinyFS */
-    int32_t sb_rootnum; /* Block number for the root directory inode */
+    int * sb_rootnum; //pointer to the root block
     int32_t sb_totalct; /* Total number of files in the file system */
     int32_t sb_freect; /* Number of free data blocks */
 
-    /* Bit map for the free blocks, uses up rest of the space in 
-    this struct to make the superblock 256-bytes size */
-    std::bitset<TFS_SB_MAPSIZE> sb_bitmap;
+    //contains the pointer to the bitmap
+    bitMap * bitMapTable; 
 
     /* Default constructor */
-    superblock(int numBlocks)
-        : sb_magicnum(TFS_SB_MAGIC_NUM), sb_rootnum(TFS_SB_ROOTNUM_INIT), sb_totalct(TFS_SB_TOTALCT_INIT), 
-          sb_freect((int32_t) numBlocks), sb_bitmap() {}
+    superblock(int numBlocks){
+        this->sb_magicnum = 0;
+        this->sb_rootnum = NULL;
+        this->sb_totalct = 0;
+        this->sb_freect = 0;
+        this->bitMapTable = NULL;
+    }
 }superblock;
 
 /**
