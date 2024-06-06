@@ -1,9 +1,8 @@
 #include "libDisk.h"
-std::vector<int> diskFiles;
+int currFD;
 
 int openDisk(char *filename, int nBytes){
     FILE * diskFIle;
-    int currFD;
     bool existFD = false;
     // if nbytes not perfectly divisible by the block size
     if((nBytes % BLOCKSIZE) != 0){
@@ -23,19 +22,6 @@ int openDisk(char *filename, int nBytes){
         currFD = fileno(diskFIle);
         if(currFD == -1){
             return OPEN_DISK_ERROR;
-        }
-
-        //check if the file discriptor exist in the list
-        for(int i = 0; i < (int)diskFiles.size(); i++){
-            if(diskFiles[i] == currFD){
-                existFD = true;
-                break;
-            }
-        }
-
-        //if file discriptor don't exist add it to the list
-        if(existFD == false){
-            diskFiles.push_back(currFD);
         }
 
         //resize the file to the given nBytes
@@ -62,19 +48,6 @@ int openDisk(char *filename, int nBytes){
         if(currFD == -1){
             return OPEN_DISK_ERROR;
         }
-
-        //check if the file discriptor exist in the list
-        for(int i = 0; i < (int)diskFiles.size(); i++){
-            if(diskFiles[i] == currFD){
-                existFD = true;
-                break;
-            }
-        }
-
-        //if file discriptor don't exist add it to the list
-        if(existFD == false){
-            diskFiles.push_back(currFD);
-        }
     }
     
     //returns the recently added fd to access the file
@@ -83,19 +56,6 @@ int openDisk(char *filename, int nBytes){
 
 
 int readBlock(int disk, int bNum, void *block){
-    bool found = false;
-    //check if the disk fd exist in the diskFiles list
-    for(int i = 0; i < (int)diskFiles.size(); i++){
-        if(diskFiles[i] == disk){
-            found = true;
-            break;
-        }
-    }
-
-    if(!found){
-        return DISK_READ_ERROR;
-    }
-
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
@@ -123,17 +83,6 @@ int readBlock(int disk, int bNum, void *block){
 }
 
 int writeBlock(int disk, int bNum, void *block){
-    bool found = false;
-    //check if the disk fd exist in the diskFiles list
-    for(int i = 0; i < (int)diskFiles.size(); i++){
-        if(diskFiles[i] == disk){
-            found = true;
-            break;
-        }
-    }
-    if(!found){
-        return DISK_WRITE_ERROR;
-    }
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
@@ -156,30 +105,14 @@ int writeBlock(int disk, int bNum, void *block){
         return DISK_WRITE_ERROR;
     }
 
-    //if successfully read the data 
+    //if successfully write the data 
     return DISK_WRITE_SUCCESS;
 }
 
 void closeDisk(int disk){
-    bool found = false;
-    int fileIndex = 0;
-    //check if the disk fd exist in the diskFiles list
-    for(int i = 0; i < (int)diskFiles.size(); i++){
-        if(diskFiles[i] == disk){
-            found = true;
-            fileIndex = i;
-            break;
-        }
-    }
-    if(!found){
-        return;
-    }
-
     //close the file using file descriptor
     if(close(disk) == -1){
         return;
     }
-    //remove the file from the list
-    diskFiles.erase(diskFiles.begin() + fileIndex);
     return;
 }
