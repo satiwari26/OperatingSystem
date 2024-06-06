@@ -5,7 +5,7 @@ int openDisk(char *filename, int nBytes){
     FILE * diskFIle;
     bool existFD = false;
     // if nbytes not perfectly divisible by the block size
-    if((nBytes % BLOCKSIZE) != 0){
+    if((nBytes % BLOCKSIZE) != 0 || (nBytes / BLOCKSIZE) <= 3){
         return ERROR_DISK_BLKSIZE;
     }
 

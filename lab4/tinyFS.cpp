@@ -66,6 +66,9 @@ int tfs_mount(char* filename)
         return read_result;
     }
 
+    //set the total number of blocks in the tinyFS block
+    tinyFS->totalNumBlocksOnDisk = tinyFS->getSuperblock()->sb_freect + 3;
+
     // Check that the superblock magic number matches the TinyFS magic number
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
     {
@@ -88,4 +91,42 @@ int tfs_unmount(void)
         return 0;
     }
     return ERROR_TFS_UNMOUNT;
+}
+
+fileDescriptor tfs_open(char *name){
+    //check if the root inode exist
+    if(tinyFS->fd < 0){
+        return ERROR_TFS_OPEN;
+    }
+    int read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+    if (read_result != SUCCESS_READDISK)
+    {
+        delete(tinyFS);
+        return read_result;
+    }
+
+    // Check that the superblock is mounted or not
+    if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
+    {
+        //get to the last data block of the file, find the open space and then write the file name to it
+
+        /*we need to chage the inode next data block from pointer to offset number*/
+
+        /**infact change all the block pointers to offset number*/
+
+
+    }
+    else 
+    {
+        delete(tinyFS);
+        return ERROR_TFS_MOUNT;
+    }
+
+
+    //create root inode, write to disk
+    inode rootInode;
+
+    //create dataBlock, write dataStruct to it, write to disk
+
+    //update the openFileStruct
 }
