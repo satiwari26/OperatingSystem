@@ -67,7 +67,7 @@ int tfs_mount(char* filename)
     }
 
     //set the total number of blocks in the tinyFS block
-    tinyFS->totalNumBlocksOnDisk = tinyFS->getSuperblock()->sb_freect + 3;
+    tinyFS->totalNumBlocksOnDisk = tinyFS->getSuperblock()->sb_totalBlocks;
 
     // Check that the superblock magic number matches the TinyFS magic number
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
@@ -108,11 +108,10 @@ fileDescriptor tfs_open(char *name){
     // Check that the superblock is mounted or not
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
     {
-        //get to the last data block of the file, find the open space and then write the file name to it
+        //find the inode and corresponding FD for this file
+        
 
         /*we need to chage the inode next data block from pointer to offset number*/
-
-        /**infact change all the block pointers to offset number*/
 
 
     }

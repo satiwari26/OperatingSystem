@@ -168,7 +168,7 @@ typedef struct superblock
     int8_t sb_magicnum; /* The magic number, 0x5A, for TinyFS */
     int32_t sb_rootnum; /* Pointer to the root block */
     int32_t sb_totalct; /* Total number of files in the file system */
-    int32_t sb_freect; /* Number of free data blocks */
+    int32_t sb_totalBlocks; /* Number of total data blocks */
 
     /* Contains the pointer to the bitmap */
     int32_t bitMapTable; 
@@ -180,7 +180,7 @@ typedef struct superblock
         this->sb_magicnum = TFS_SB_MAGIC_NUM;
         this->sb_rootnum = ROOT_NODE_BLOCK_NUM;
         this->sb_totalct = 1; /* One file in the system currently, the root inode */
-        this->sb_freect = numBlocks - 3;    /* Super block takes a space of one block, root inode takes a space of one block and bitmap block */
+        this->sb_totalBlocks = numBlocks - 3;    /* Super block takes a space of one block, root inode takes a space of one block and bitmap block */
         this->bitMapTable = BITMAP_BLOCK_NUM;
 
         for(int i = 0; i < 231; i++){
@@ -193,7 +193,7 @@ typedef struct superblock
         this->sb_magicnum = 0;
         this->sb_rootnum = -1;
         this->sb_totalct = 0;
-        this->sb_freect = 0;
+        this->sb_totalBlocks = 0;
         this->bitMapTable = -1; //initially -1
 
         for(int i = 0; i < 231; i++){
@@ -250,10 +250,21 @@ class tfs
             }
             return tempInode;
         }
+        /**
+         * @brief
+         * returns the next file descriptor
+        */
         int getNextVirtualFD(){
-            int tempFD = this->freeFileDescriptors[0];
-            this->freeFileDescriptors.erase(this->freeFileDescriptors.begin());
-            return tempFD;
+            if(this->freeFileDescriptors.size() > 0){
+                int tempFD = this->freeFileDescriptors[0];
+                this->freeFileDescriptors.erase(this->freeFileDescriptors.begin());
+                return tempFD;
+            }
+            else{
+                int tempFD = this->virtualFD;
+                this->virtualFD++;
+                return tempFD;
+            }
         }
         //close the open FD and adds it to the free list
         void closeOpenFD(fileDescriptor key){
