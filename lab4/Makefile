@@ -15,6 +15,9 @@ all: tinyFS
 tinyFS: $(LAB4_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LAB4_OBJS)
 
+test: $(LAB4_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LAB4_OBJS) test.cpp
+	
 # Compilation rule for cpp files
 %.o: %.cpp $(LAB4_HDRS)
 	$(CC) $(CFLAGS) -c $< -o $@
