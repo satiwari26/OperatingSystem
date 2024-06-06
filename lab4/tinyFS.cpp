@@ -16,6 +16,11 @@ int tfs_mkfs(char *filename, int nBytes)
     // Make a new file system
     tinyFS = new tfs(numBlocks);
 
+    if (filename == NULL || strlen(filename) > MAX_FILENAME_LEN)
+    {
+        filename = DEFAULT_DISK_NAME;
+    }
+
     if ((tinyFS->fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
     {
         cerr << "Error: could not open file from disk : " << tinyFS->fd << endl; 

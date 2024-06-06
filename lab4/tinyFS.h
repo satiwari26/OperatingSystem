@@ -4,13 +4,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <vector>
 
 #include "libDisk.h"
 
 /* use this name for a default disk file name */
 #ifndef DEFAULT_DISK_NAME
-#define DEFAULT_DISK_NAME tinyFSDisk
+#define DEFAULT_DISK_NAME "tinyFSDisk"
 #endif
 
 /**
@@ -45,6 +46,7 @@
 #define INODE_COUNT 16
 #define SUPERBLOCK_NUM 0
 #define INODELIST_BLOCK_NUM 1
+#define MAX_FILENAME_LEN 8
 /* END OF TEST VARIABLES/MACROS */
 
 typedef int fileDescriptor;
