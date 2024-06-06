@@ -64,7 +64,7 @@ typedef struct dataBlock{
             this->paddedBlock[i] = '\0';
        }
     }
-};
+}dataBlock;
 
 /**
  * An inode block to keep track of metadata for each file within TinyFS.
@@ -91,8 +91,18 @@ typedef struct inode
 typedef struct bitMap{
     bitMap * nextBitMap;
     std::bitset<TFS_SB_MAPSIZE> bitmap;
-};
-/**
+
+    /* Default constructor */
+    bitMap()
+    {
+        this->nextBitMap = NULL;
+        
+        for (int i = 0; i < TFS_SB_MAPSIZE; i++)
+        {
+            bitmap[i] = 0;
+        }
+    }
+}bitMap;
 
 /**
  * A block that stores metadata about the file system. It is always stored at 
@@ -113,8 +123,9 @@ typedef struct superblock
         this->sb_magicnum = 0;
         this->sb_rootnum = NULL;
         this->sb_totalct = 0;
-        this->sb_freect = 0;
-        this->bitMapTable = NULL;
+        this->sb_freect = numBlocks;
+        auto bitMapTable = bitMap();
+        this->bitMapTable = &bitMapTable;
     }
 }superblock;
 
