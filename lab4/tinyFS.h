@@ -137,7 +137,10 @@ class tfs
     private:
         std::unordered_map<fileDescriptor, inode> openInodes; /* A mapping between open inodes in the file system and their associated file descriptor */
         superblock sb; /* Superblock for the TinyFS file system */
+
     public:
+        fileDescriptor fd = -1; /* Global file descriptor for current disk */
+
         // Constructor
         tfs(int numBlocks)
             : openInodes(std::unordered_map<fileDescriptor, inode>()), 
