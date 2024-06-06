@@ -120,10 +120,10 @@ typedef struct superblock
 
     /* Default constructor */
     superblock(int numBlocks){
-        this->sb_magicnum = 0;
+        this->sb_magicnum = TFS_SB_MAGIC_NUM;
         this->sb_rootnum = NULL;
         this->sb_totalct = 0;
-        this->sb_freect = numBlocks;
+        this->sb_freect = numBlocks - 1;    //super block takes a space of one block
         auto bitMapTable = bitMap();
         this->bitMapTable = &bitMapTable;
     }
