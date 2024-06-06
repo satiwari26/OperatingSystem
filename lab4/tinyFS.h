@@ -33,11 +33,17 @@
 /**
  * TinyFS success/error code macros
 */
-#ifndef SUCCESS_MKFS
-#define SUCCESS_MKFS 0 /* Successfully made a file system */
+#ifndef SUCCESS_TFS_MKFS
+#define SUCCESS_TFS_MKFS 0 /* Successfully made a file system */
 #endif
-#ifndef ERROR_MKFS
-#define ERROR_MKFS -1000 /* Failed to make a file system */
+#ifndef SUCCESS_TFS_MOUNT
+#define SUCCESS_TFS_MOUNT 0 /* Successfully mounted a file system */
+#endif
+#ifndef ERROR_TFS_MKFS
+#define ERROR_TFS_MKFS -1000 /* Failed to make a file system */
+#endif
+#ifndef ERROR_TFS_MOUNT
+#define ERROR_TFS_MOUNT -1001 /* Failed to make a file system */
 #endif
 
 /*****
@@ -120,7 +126,7 @@ typedef struct superblock
     //contains the pointer to the bitmap
     bitMap * bitMapTable; 
 
-    /* Default constructor */
+    /* Constructor */
     superblock(int numBlocks){
         this->sb_magicnum = TFS_SB_MAGIC_NUM;
         this->sb_rootnum = NULL;
@@ -128,6 +134,15 @@ typedef struct superblock
         this->sb_freect = numBlocks - 1;    //super block takes a space of one block
         auto bitMapTable = bitMap();
         this->bitMapTable = &bitMapTable;
+    }
+
+    /* Default constructor */
+    superblock() {
+        this->sb_magicnum = 0;
+        this->sb_rootnum = NULL;
+        this->sb_totalct = 0;
+        this->sb_freect = 0;
+        this->bitMapTable = NULL;
     }
 }superblock;
 
@@ -142,6 +157,11 @@ class tfs
 
     public:
         fileDescriptor fd = -1; /* Global file descriptor for current disk */
+
+        // Constructor
+        tfs()
+            : openInodes(std::unordered_map<fileDescriptor, inode>()), 
+              sb(superblock()) {}
 
         // Constructor
         tfs(int numBlocks)
