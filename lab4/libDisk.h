@@ -23,7 +23,7 @@
  * @brief
  * disk file pointer list for all the open DISKS
 */
-extern std::vector<int> diskFiles;
+extern int currFD;
 
 
 /**
