@@ -12,7 +12,7 @@ int tfs_mkfs(char *filename, int nBytes)
 
     if (filename == NULL || strlen(filename) > MAX_FILENAME_LEN)
     {
-        filename = DEFAULT_DISK_NAME;
+        filename = (char*) (const char*) DEFAULT_DISK_NAME;
     }
 
     if ((fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
@@ -83,5 +83,8 @@ int tfs_unmount(void)
     {
         closeDisk(tinyFS->fd);
         delete(tinyFS);
+
+        return 0;
     }
+    return ERROR_TFS_UNMOUNT;
 }

@@ -45,6 +45,9 @@
 #ifndef ERROR_TFS_MOUNT
 #define ERROR_TFS_MOUNT -1001 /* Failed to make a file system */
 #endif
+#ifndef ERROR_TFS_UNMOUNT
+#define ERROR_TFS_UNMOUNT -1002
+#endif
 
 /*****
  *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS.
