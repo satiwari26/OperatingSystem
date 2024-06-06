@@ -32,12 +32,6 @@
 /**
  * TinyFS success/error code macros
 */
-#ifndef SUCCESS_OPENDISK
-#define SUCCESS_OPENDISK 0  /* Successfully opened disk */      // TODO: move to libDisk.h
-#endif
-#ifndef SUCCESS_WRITEDISK
-#define SUCCESS_WRITEDISK 0  /* Successfully wrote block to disk */      // TODO: move to libDisk.h
-#endif
 #ifndef SUCCESS_MKFS
 #define SUCCESS_MKFS 0 /* Successfully made a file system */
 #endif
@@ -57,10 +51,19 @@ typedef int fileDescriptor;
 
 /** @brief
  * struct of dataBlock
+ * 
+ * 240 is even divisible by 12 (8 bytes for name, 4 for inode num)
 */
 typedef struct dataBlock{
     dataBlock * nextDataBlock;
-    char dataBlock[248];
+    char directDataBlock[240];
+    char paddedBlock[8];
+
+    dataBlock(){
+       for(int i=0; i<8;i++){
+            this->paddedBlock[i] = '\0';
+       }
+    }
 };
 
 /**

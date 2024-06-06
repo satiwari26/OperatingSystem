@@ -6,6 +6,9 @@
 #define BLOCKSIZE 256
 
 // disk open related flags
+#ifndef SUCCESS_OPENDISK
+#define SUCCESS_OPENDISK 0  /* Successfully opened disk */      // TODO: move to libDisk.h
+#endif
 #define OPEN_DISK_ERROR -1
 
 //disk read related flag

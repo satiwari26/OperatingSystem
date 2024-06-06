@@ -29,7 +29,7 @@ int tfs_mkfs(char *filename, int nBytes)
         int result = writeBlock((int) fd,  curBlock, zero_bytes);
 
         // Return error code from the result, if the system did not successfully write a block to disk
-        if (result < SUCCESS_WRITEDISK)
+        if (result < DISK_WRITE_SUCCESS)
         {
             return result; 
         }
@@ -41,7 +41,7 @@ int tfs_mkfs(char *filename, int nBytes)
     int sb_result = writeBlock((int) fd, SUPERBLOCK_NUM, (void*) tinyFS->getSuperblock());
     cout << "size sb:" << sizeof(tinyFS->getSuperblock()) << endl;
     // Return error code from the result, if the system did not successfully write a block to disk
-    if (sb_result < SUCCESS_WRITEDISK)
+    if (sb_result < DISK_WRITE_SUCCESS)
     {
         return sb_result; 
     }
@@ -60,7 +60,7 @@ int tfs_mkfs(char *filename, int nBytes)
     {
         int il_result = writeBlock((int) fd, i, inodeList.data());
         
-        if (il_result < SUCCESS_WRITEDISK)
+        if (il_result < DISK_WRITE_SUCCESS)
         {
             return il_result; 
         }
