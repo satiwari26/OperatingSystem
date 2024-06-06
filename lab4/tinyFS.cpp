@@ -26,22 +26,23 @@ int tfs_mkfs(char *filename, int nBytes)
     char zero_bytes[BLOCKSIZE] = { 0 };
     for (int curBlock = 0; curBlock < numBlocks; curBlock++)
     {
-        int result = writeBlock((int) fd,  curBlock, zero_bytes);
+        int write_result = writeBlock((int) fd,  curBlock, zero_bytes);
 
         // Return error code from the result, if the system did not successfully write a block to disk
-        if (result < DISK_WRITE_SUCCESS)
+        if (write_result != SUCCESS_WRITEDISK)
         {
             closeDisk(fd);
-            return result; 
+            return write_result; 
         }
     }
     
     // Write the superblock to the disk
     superblock sb = superblock(numBlocks);
-    int sb_result = writeBlock((int) fd, SUPERBLOCK_NUM, (void*) &sb);
     
+    int sb_result = writeBlock((int) fd, SUPERBLOCK_NUM, (void*) &sb);
+    cout << "size sb:" << sizeof(sb) << endl;
     // Return error code from the result, if the system did not successfully write a block to disk
-    if (sb_result < DISK_WRITE_SUCCESS)
+    if (sb_result != SUCCESS_WRITEDISK)
     {
         closeDisk(fd);
         return sb_result; 
@@ -59,10 +60,10 @@ int tfs_mount(char* filename)
     // Open the disk and read the superblock from it
     tinyFS->fd = openDisk(filename, 0);
     int read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
-    if (read_result < DISK_READ_SUCCESS)
+    if (read_result != SUCCESS_READDISK)
     {
         delete(tinyFS);
-        return DISK_READ_ERROR;
+        return read_result;
     }
 
     // Check that the superblock magic number matches the TinyFS magic number

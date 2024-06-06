@@ -6,7 +6,7 @@ int openDisk(char *filename, int nBytes){
     bool existFD = false;
     // if nbytes not perfectly divisible by the block size
     if((nBytes % BLOCKSIZE) != 0){
-        return OPEN_DISK_ERROR;
+        return ERROR_DISK_BLKSIZE;
     }
 
     //if nBytes > 0 open the existing file or new file and resize it
@@ -15,38 +15,38 @@ int openDisk(char *filename, int nBytes){
         diskFIle = fopen(filename, "r+");
         //opening the file error
         if(diskFIle == NULL){
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_OPEN;
         }
 
         //get the current files FD
         currFD = fileno(diskFIle);
         if(currFD == -1){
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_FD;
         }
 
         //resize the file to the given nBytes
         if (ftruncate(fileno(diskFIle), nBytes) != 0) {
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_TRUNCATE;
         }
     }
     // if the nbytes is 0
     else if(nBytes == 0){
         //check if the file exist in the directory
         if(access(filename, F_OK) == -1){
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_ACCESS;
         }
 
         // if file does exist open it without resizing it
         diskFIle = fopen(filename, "r+");
         //opening the file error
         if(diskFIle == NULL){
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_OPEN;
         }
 
         //get the current files FD
         currFD = fileno(diskFIle);
         if(currFD == -1){
-            return OPEN_DISK_ERROR;
+            return ERROR_DISK_FD;
         }
     }
     
@@ -59,54 +59,54 @@ int readBlock(int disk, int bNum, void *block){
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
-        return DISK_READ_ERROR;
+        return ERROR_DISK_FSTAT;
     }
 
     //check if the offset is greater/equal than the actual file size
-    if(fileStat.st_size >= bNum * BLOCKSIZE){
-        return DISK_READ_ERROR;
+    if(fileStat.st_size <= bNum * BLOCKSIZE){
+        return ERROR_DISK_FOFFSET;
     }
 
     //perform the seek in the file for offset and read the block for the data
     if (lseek(disk, bNum * BLOCKSIZE, SEEK_SET) == -1) {
-        return DISK_READ_ERROR;
+        return ERROR_DISK_LSEEK;
     }
 
     //read the data from the disk based on the BLOCK size
     int bytesRead = read(disk, (char *)block, BLOCKSIZE);
     if(bytesRead == -1){
-        return DISK_READ_ERROR;
+        return ERROR_DISK_READ;
     }
 
     //if successfully read the data 
-    return DISK_READ_SUCCESS;
+    return SUCCESS_READDISK;
 }
 
 int writeBlock(int disk, int bNum, void *block){
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
-        return DISK_WRITE_ERROR;
+        return ERROR_DISK_FSTAT;
     }
 
     //check if the offset is greater/equal than the actual file size
-    if(fileStat.st_size >= bNum * BLOCKSIZE){
-        return DISK_WRITE_ERROR;
+    if(fileStat.st_size <= bNum * BLOCKSIZE){
+        return ERROR_DISK_FOFFSET;
     }
 
     //perform the seek in the file for offset and read the block for the data
     if (lseek(disk, bNum * BLOCKSIZE, SEEK_SET) == -1) {
-        return DISK_WRITE_ERROR;
+        return ERROR_DISK_LSEEK;
     }
 
     //read the data from the disk based on the BLOCK size
     int bytesRead = write(disk, (char *)block, BLOCKSIZE);
     if(bytesRead == -1){
-        return DISK_WRITE_ERROR;
+        return ERROR_DISK_WRITE;
     }
 
     //if successfully write the data 
-    return DISK_WRITE_SUCCESS;
+    return SUCCESS_WRITEDISK;
 }
 
 void closeDisk(int disk){
