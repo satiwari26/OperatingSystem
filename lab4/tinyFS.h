@@ -20,14 +20,14 @@ typedef int32_t fileDescriptor;
 */
 typedef struct dataBlock {
     int32_t nextDataBlock;
-    char directDataBlock[247];
+    char directDataBlock[DATABLOCK_MAXSIZE_BYTES];
     char paddedBlock[5];
 
     /* Default constructor */
     dataBlock() {
         this->nextDataBlock = -1;   //initialize it to -1
 
-        for (int32_t i = 0; i < 247; i++) {
+        for (int32_t i = 0; i < DATABLOCK_MAXSIZE_BYTES; i++) {
             this->directDataBlock[i] = '\0'; // Data blocks are initially empty
         }
 
@@ -402,7 +402,7 @@ class tfs
         */
         int deleteRootDataEntry(inode nodeVal){
             int currDataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
-            vector<std::array<char, 13>> dataEntryArr;  //for temporary storing the data of each entry in this block
+            vector<std::array<char, DATABLOCK_ENTRY_SIZE>> dataEntryArr;  //for temporary storing the data of each entry in this block
 
             vector<int32_t> dataBlockNum;   //to store the data block Number, except for the firstDataBlock
 
@@ -414,20 +414,20 @@ class tfs
                     return read_first_Root_dataBlock;
                 }
 
-                for(int i = 0; i < 247; i += 13){
+                for(int i = 0; i < DATABLOCK_MAXSIZE_BYTES; i += DATABLOCK_ENTRY_SIZE){
                     int32_t currInodeVal;
-                    memcpy(&currInodeVal, &dBlock.directDataBlock[i] + 9, sizeof(int32_t));
+                    memcpy(&currInodeVal, &dBlock.directDataBlock[i] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
 
                     //check if the currentInodeVal is the nodeVal that we want to delete
                     if(currInodeVal == nodeVal.f_inode){
-                        char dummyData[13] = {'\0'};
-                        memcpy(&dBlock.directDataBlock[i], dummyData, 13);  //rewrite those 13 bytes to null chars
+                        char dummyData[DATABLOCK_ENTRY_SIZE] = {'\0'};
+                        memcpy(&dBlock.directDataBlock[i], dummyData, DATABLOCK_ENTRY_SIZE);  //rewrite those DATABLOCK_ENTRY_SIZE bytes to null chars
                         break;
                     }
                     //store the entry in the dataEntryArr
                     else{
-                        std::array<char, 13> tempData;
-                        memcpy(tempData.data(), &dBlock.directDataBlock[i], 13);
+                        std::array<char, DATABLOCK_ENTRY_SIZE> tempData;
+                        memcpy(tempData.data(), &dBlock.directDataBlock[i], DATABLOCK_ENTRY_SIZE);
                         dataEntryArr.push_back(tempData);
                     }
                 }
@@ -461,12 +461,12 @@ class tfs
 
             //rewrite the data block and change the number of blockes if needed
             currDataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
-            float numBlocksRequired = ((float)temp_totl_files / (float)(19));
+            float numBlocksRequired = ((float)temp_totl_files / (float)(DATABLOCK_MAX_ENTRIES));
             int ceilNumBlocks = (int)std::ceil(numBlocksRequired);
 
             if(ceilNumBlocks == 1){ //only main root block is required
                 dataBlock tempData = dataBlock();
-                for(int i = 0; i < 247; i += 13){
+                for(int i = 0; i < DATABLOCK_MAXSIZE_BYTES; i += DATABLOCK_ENTRY_SIZE){
                     memcpy(&tempData.directDataBlock[i], dataEntryArr[0].data(), dataEntryArr[0].size() * sizeof(char));
                     dataEntryArr.erase(dataEntryArr.begin());
                 }
@@ -486,7 +486,7 @@ class tfs
                     }
 
                     dataBlock tempDBlock = dataBlock();
-                    for(int j = 0; j < 247; j += 13){
+                    for(int j = 0; j < DATABLOCK_MAXSIZE_BYTES; j += DATABLOCK_ENTRY_SIZE){
                         memcpy(&tempDBlock.directDataBlock[j], dataEntryArr[0].data(), dataEntryArr[0].size() * sizeof(char));
                         dataEntryArr.erase(dataEntryArr.begin());
                     }
