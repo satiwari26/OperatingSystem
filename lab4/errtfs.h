@@ -16,14 +16,20 @@
 #ifndef ERROR_TFS_CLOSE
 #define ERROR_TFS_CLOSE -1004 /* Failed to close a file in the file system */
 #endif
+#ifndef ERROR_TFS_WRITE
+#define ERROR_TFS_WRITE -1005 /* Failed to write a file in the file system */
+#endif
+#ifndef ERROR_TFS_DELETE
+#define ERROR_TFS_DELETE -1006 /* Failed to delete a file in the file system */
+#endif
 #ifndef ERROR_TFS_READBYTE
-#define ERROR_TFS_READBYTE -1005 /* Failed to read a byte from a file in the file system */
+#define ERROR_TFS_READBYTE -1007 /* Failed to read a byte from a file in the file system */
 #endif
 #ifndef ERROR_TFS_SEEK
-#define ERROR_TFS_SEEK -1006 /* Failed to seek a file in the file system */
+#define ERROR_TFS_SEEK -1008 /* Failed to seek a file in the file system */
 #endif
 #ifndef ERROR_TFS_CREATEFILE
-#define ERROR_TFS_CREATEFILE -1007 /* Failed to create a file in the file system */
+#define ERROR_TFS_CREATEFILE -1009 /* Failed to create a file in the file system */
 #endif
 
 /** ERROR CODES BEGIN **/

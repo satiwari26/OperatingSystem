@@ -53,6 +53,9 @@
 #ifndef SUCCESS_TFS_CLOSE
 #define SUCCESS_TFS_CLOSE 0 /* Successfully closed a file in a file system */
 #endif
+#ifndef SUCCESS_TFS_DELETE
+#define SUCCESS_TFS_DELETE 0 /* Successfully deleted a file in a file system */
+#endif
 #ifndef SUCCESS_TFS_READBYTE
 #define SUCCESS_TFS_READBYTE 0 /* Successfully read a byte of data from a file system */
 #endif
