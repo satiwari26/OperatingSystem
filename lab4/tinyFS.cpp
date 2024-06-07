@@ -8,47 +8,71 @@ int tfs_mkfs(char *filename, int nBytes)
 {
     int numBlocks = nBytes / BLOCKSIZE; /* Maximum number of blocks supported by the tinyFS */
 
-    fileDescriptor fd = -1; /* Local file descriptor for formatting the file system */
+    tfs tfsNew = tfs(numBlocks); /* New file system to be formatted to the disk */
 
     if (filename == NULL || strlen(filename) > MAX_FILENAME_LEN)
     {
         filename = (char*) (const char*) DEFAULT_DISK_NAME;
     }
 
-    if ((fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
+    if ((tfsNew.fd = openDisk(filename, nBytes)) < SUCCESS_OPENDISK)
     {
-        cerr << "Error: could not open file from disk : " << fd << endl; 
-        closeDisk(fd);
-        return fd; // Return the error code stored in the file descriptor
+        cerr << "Error: could not open file from disk : " << tfsNew.fd << endl; 
+        closeDisk(tfsNew.fd);
+        return tfsNew.fd; // Return the error code stored in the file descriptor
     }
 
     // Initialize all the data to 0x00
     char zero_bytes[BLOCKSIZE] = { 0 };
     for (int curBlock = 0; curBlock < numBlocks; curBlock++)
     {
-        int write_result = writeBlock((int) fd,  curBlock, zero_bytes);
+        int write_result = writeBlock((int) tfsNew.fd,  curBlock, zero_bytes);
 
         // Return error code from the result, if the system did not successfully write a block to disk
         if (write_result != SUCCESS_WRITEDISK)
         {
-            closeDisk(fd);
+            closeDisk(tfsNew.fd);
             return write_result; 
         }
     }
     
-    // Write the superblock to the disk
-    superblock sb = superblock(numBlocks);
-    
-    int sb_result = writeBlock((int) fd, SUPERBLOCK_NUM, (void*) &sb);
-    cout << "size sb:" << sizeof(sb) << endl;
-    // Return error code from the result, if the system did not successfully write a block to disk
+    // // Write the superblock to the disk
+    int sb_result = writeBlock((int) tfsNew.fd, SUPERBLOCK_NUM, (void*) tfsNew.getSuperblock());
+    cout << "size sb:" << sizeof(*tfsNew.getSuperblock()) << endl;
+    // Return error code from the result, if the system did not successfully write a superblock to disk
     if (sb_result != SUCCESS_WRITEDISK)
     {
-        closeDisk(fd);
+        closeDisk(tfsNew.fd);
         return sb_result; 
     }
 
-    closeDisk((int) fd);
+    // Write the root inode to the disk
+    inode rootInode = inode();
+    int root_result = writeBlock((int) tfsNew.fd, ROOT_NODE_BLOCK_NUM, (void*) &rootInode);
+    cout << "size root inode:" << sizeof(rootInode) << endl;
+    // Return error code from the result, if the system did not successfulyl write a root inode block to the disk
+    if (root_result != SUCCESS_WRITEDISK)
+    {
+        closeDisk(tfsNew.fd);
+        return root_result; 
+    }
+
+    // Write the bitmap to the disk
+    bitMap initBitMap = bitMap();
+    int bitmap_result = writeBlock((int) tfsNew.fd, BITMAP_BLOCK_NUM, (void*) &initBitMap);
+    cout << "size bitmap:" << sizeof(initBitMap) << endl;
+    // Return error code from the result, if the system did not successfulyl write a bitmap block to the disk
+    if (bitmap_result != SUCCESS_WRITEDISK)
+    {
+        closeDisk(tfsNew.fd);
+        return bitmap_result; 
+    }
+
+    // No need to write the root inode's data block (name-value pairs) to the disk.
+    // It is initially empty, and it's associated block number is already defined in the superblock.
+    // It is also allocated in the bitmap.
+
+    closeDisk((int) tfsNew.fd);
 
     return SUCCESS_TFS_MKFS;
 }

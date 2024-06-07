@@ -27,7 +27,7 @@
 #define TFS_SB_TOTALCT_INIT 0 /* The initial total file count for the TinyFS superblock */
 #endif
 #ifndef TFS_SB_MAPSIZE
-#define TFS_SB_MAPSIZE (248 * 8) /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
+#define TFS_SB_MAPSIZE (256 * 8) /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
 #endif
 
 /**
@@ -106,7 +106,7 @@ typedef struct inode
     int32_t first_dataBlock; // pointer to the data block of the current file
     int32_t f_size; // contains the data size of the file
     int32_t N_dataBlocks;   // contains the number of datablock information
-    char paddedBlock[232];
+    char paddedBlock[240];
 
     /* Default constructor, typically for root inode */
     inode(){
@@ -115,7 +115,7 @@ typedef struct inode
         this->f_size = 0;
         this->N_dataBlocks = 1; // One, for the root inode name-pairs datablock (initially empty datablock, but it exists)
 
-        for(int i = 0; i < 232; i++) {
+        for(int i = 0; i < 240; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
         std::cout << "size inode:" << sizeof(inode) << std::endl;
@@ -128,7 +128,7 @@ typedef struct inode
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
 
-        for(int i = 0; i < 236; i++) {
+        for(int i = 0; i < 240; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
@@ -156,6 +156,7 @@ typedef struct bitMap{
         bitmap[SUPERBLOCK_NUM] = 1;
         bitmap[ROOT_NODE_BLOCK_NUM] = 1;
         bitmap[BITMAP_BLOCK_NUM] = 1;
+        bitmap[ROOT_NODE_FIRST_DATA_BLOCK] = 1;
     }
 }bitMap;
 
@@ -173,17 +174,17 @@ typedef struct superblock
     /* Contains the pointer to the bitmap */
     int32_t bitMapTable; 
 
-    char reserved[231]; /* Reserved bits, to fill up 256 bytes total superblock size */
+    char reserved[239]; /* Reserved bits, to fill up 256 bytes total superblock size */
 
     /* Constructor, used in initial making of the file system */
     superblock(int numBlocks){
         this->sb_magicnum = TFS_SB_MAGIC_NUM;
         this->sb_rootnum = ROOT_NODE_BLOCK_NUM;
         this->sb_totalct = 1; /* One file in the system currently, the root inode */
-        this->sb_totalBlocks = numBlocks - 3;    /* Super block takes a space of one block, root inode takes a space of one block and bitmap block */
+        this->sb_totalBlocks = numBlocks;    /* Super block takes a space of one block, root inode takes a space of one block and bitmap block */
         this->bitMapTable = BITMAP_BLOCK_NUM;
 
-        for(int i = 0; i < 231; i++){
+        for(int i = 0; i < 239; i++){
             this->reserved[i] = 0x00;
        }
     }
@@ -196,7 +197,7 @@ typedef struct superblock
         this->sb_totalBlocks = 0;
         this->bitMapTable = -1; //initially -1
 
-        for(int i = 0; i < 231; i++){
+        for(int i = 0; i < 239; i++){
             this->reserved[i] = 0x00;
        }
     }
@@ -215,9 +216,10 @@ class tfs
         int totalNumBlocksOnDisk;
         fileDescriptor fd = -1; /* Global file descriptor for current disk */
         fileDescriptor virtualFD = 2; /*virtual FD for to keep track of the open virtual files*/
-        vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
+        std::vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
         std::unordered_map<fileDescriptor , inode> openFileStruct; /* A mapping between the inodes and fileDescriptor maintained by tfs_open() and tfs_close()*/
-        bitMap bit_map; //keeps track of the bitmap struct 
+        bitMap bit_map; //keeps track of the bitmap struct
+
         // Constructor
         tfs() :sb(superblock()), virtualFD(2) {}    /*initial virtual FD to 2*/
 
