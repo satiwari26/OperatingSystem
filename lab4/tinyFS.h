@@ -60,11 +60,11 @@
 #define BITMAP_BLOCK_NUM 2
 #define ROOT_NODE_BLOCK_NUM 1
 #define ROOT_NODE_FIRST_DATA_BLOCK 3
-#define ROOT_INODE_NUM 2
+#define ROOT_INODE_NUM 1
 #define MAX_FILENAME_LEN 8
 /* END OF TEST VARIABLES/MACROS */
 
-typedef int fileDescriptor;
+typedef int32_t fileDescriptor;
 
 /** @brief
  * struct of dataBlock
@@ -73,18 +73,18 @@ typedef int fileDescriptor;
 */
 typedef struct dataBlock {
     int32_t nextDataBlock;
-    char directDataBlock[240];
-    char paddedBlock[8];
+    char directDataBlock[247];
+    char paddedBlock[5];
 
     /* Default constructor */
     dataBlock() {
         this->nextDataBlock = -1;   //initialize it to -1
 
-        for (int i = 0; i < 240; i++) {
+        for (int32_t i = 0; i < 247; i++) {
             this->directDataBlock[i] = '\0'; // Data blocks are initially empty
         }
 
-        for(int i = 0; i < 8; i++) {
+        for(int32_t i = 0; i < 5; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
         std::cout << "size datablock:" << sizeof(dataBlock) << std::endl;
@@ -115,20 +115,20 @@ typedef struct inode
         this->f_size = 0;
         this->N_dataBlocks = 1; // One, for the root inode name-pairs datablock (initially empty datablock, but it exists)
 
-        for(int i = 0; i < 240; i++) {
+        for(int32_t i = 0; i < 240; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
         std::cout << "size inode:" << sizeof(inode) << std::endl;
     }
 
     /* Constructor */
-    inode(int inode_num){
+    inode(int32_t inode_num){
         this->first_dataBlock = -1;
         this->f_size = 0;
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
 
-        for(int i = 0; i < 240; i++) {
+        for(int32_t i = 0; i < 240; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
@@ -147,7 +147,7 @@ typedef struct bitMap{
     /* Default constructor */
     bitMap()
     {
-        for (int i = 0; i < TFS_SB_MAPSIZE; i++)
+        for (int32_t i = 0; i < TFS_SB_MAPSIZE; i++)
         {
             bitmap[i] = 0;
         }
@@ -177,14 +177,14 @@ typedef struct superblock
     char reserved[239]; /* Reserved bits, to fill up 256 bytes total superblock size */
 
     /* Constructor, used in initial making of the file system */
-    superblock(int numBlocks){
+    superblock(int32_t numBlocks){
         this->sb_magicnum = TFS_SB_MAGIC_NUM;
         this->sb_rootnum = ROOT_NODE_BLOCK_NUM;
         this->sb_totalct = 1; /* One file in the system currently, the root inode */
         this->sb_totalBlocks = numBlocks;    /* Super block takes a space of one block, root inode takes a space of one block and bitmap block */
         this->bitMapTable = BITMAP_BLOCK_NUM;
 
-        for(int i = 0; i < 239; i++){
+        for(int32_t i = 0; i < 239; i++){
             this->reserved[i] = 0x00;
        }
     }
@@ -197,7 +197,7 @@ typedef struct superblock
         this->sb_totalBlocks = 0;
         this->bitMapTable = -1; //initially -1
 
-        for(int i = 0; i < 239; i++){
+        for(int32_t i = 0; i < 239; i++){
             this->reserved[i] = 0x00;
        }
     }
@@ -213,7 +213,7 @@ class tfs
         superblock sb; /* Superblock for the TinyFS file system */
 
     public:
-        int totalNumBlocksOnDisk;
+        int32_t totalNumBlocksOnDisk;
         fileDescriptor fd = -1; /* Global file descriptor for current disk */
         fileDescriptor virtualFD = 2; /*virtual FD for to keep track of the open virtual files*/
         vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
@@ -223,7 +223,7 @@ class tfs
         tfs() :sb(superblock()), virtualFD(2) {}    /*initial virtual FD to 2*/
 
         // Constructor
-        tfs(int numBlocks) :sb(superblock(numBlocks)), virtualFD(2), bit_map(bitMap()) {}  /*initial virtual FD to 2*/
+        tfs(int32_t numBlocks) :sb(superblock(numBlocks)), virtualFD(2), bit_map(bitMap()) {}  /*initial virtual FD to 2*/
               
 
         // Destructor
@@ -241,9 +241,9 @@ class tfs
             return &this->sb;
         }
 
-        int getNextAvailableInode(){
-            int tempInode;
-            for(int i = 0; i < totalNumBlocksOnDisk; i++){
+        int32_t getNextAvailableInode(){
+            int32_t tempInode;
+            for(int32_t i = 0; i < totalNumBlocksOnDisk; i++){
                 if(this->bit_map.bitmap[i] == 0){
                     tempInode = i;
                     break;
@@ -255,14 +255,14 @@ class tfs
          * @brief
          * returns the next file descriptor
         */
-        int getNextVirtualFD(){
+        int32_t getNextVirtualFD(){
             if(this->freeFileDescriptors.size() > 0){
-                int tempFD = this->freeFileDescriptors[0];
+                int32_t tempFD = this->freeFileDescriptors[0];
                 this->freeFileDescriptors.erase(this->freeFileDescriptors.begin());
                 return tempFD;
             }
             else{
-                int tempFD = this->virtualFD;
+                int32_t tempFD = this->virtualFD;
                 this->virtualFD++;
                 return tempFD;
             }
@@ -272,9 +272,101 @@ class tfs
          * @brief
          * writes Inode content to the specified block
         */
-       int writeInodeBlock(inode node, int blockNumber){
-            
-       }
+        int32_t writeInodeBlock(inode node, int32_t blockNumber){
+            int32_t inode_Write_result = writeBlock((int) this->fd, blockNumber, (void*) &node);
+            return inode_Write_result;
+        }
+        /**
+         * @brief
+         * write data to the data block
+        */
+        int32_t writeDataBlock(dataBlock db, int32_t blockNumber){
+            int32_t data_Write_result = writeBlock((int) this->fd, blockNumber, (void*) &db);
+            return data_Write_result;
+        }
+        /**
+         * @brief
+         * creates instance entry for the RootDataBlock
+        */
+        int32_t writeRootDataEntry(char * fileName, int32_t inodeNumber){
+            dataBlock blockData;
+            int readDataTest = readBlock(this->fd, ROOT_NODE_FIRST_DATA_BLOCK, &blockData);
+            if(readDataTest < SUCCESS_READDISK){
+                return readDataTest;
+            }
+
+            int32_t currentBlockOffset = ROOT_NODE_FIRST_DATA_BLOCK;
+
+            //get to the next data block
+            while(blockData.nextDataBlock != -1){
+                currentBlockOffset = blockData.nextDataBlock;
+                int readDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
+                if(readDataTest < SUCCESS_READDISK){
+                    return readDataTest;
+                }
+            }
+
+            char tempDataStorage[9] = {'\0'};
+            bool moreSpaceRequired = true;
+            strncpy(tempDataStorage, fileName, 9);
+            for(int32_t i = 0; i < 247; i += 13){
+                if(blockData.directDataBlock[i] == '\0'){
+                    moreSpaceRequired = false;
+                    memcpy(&blockData.directDataBlock[i], tempDataStorage, 9);
+                    memcpy(&blockData.directDataBlock[i] + 9, &inodeNumber, sizeof(int32_t));
+                    break;
+                }
+            }
+
+            if(moreSpaceRequired){
+                //if not enough space to store the data on the current block - allocate a new block
+                blockData.nextDataBlock = getNextAvailableInode();
+                currentBlockOffset = blockData.nextDataBlock;
+                //write this block to the disk for the current block update
+                int32_t write_result = writeBlock((int) this->fd, currentBlockOffset, (void*) &blockData);
+                if(write_result < SUCCESS_WRITEDISK){
+                    return write_result;
+                }
+
+                //update the bitMap for new block allocation
+                int32_t updateBitMapInfo = updateBitMap(blockData.nextDataBlock , 1);
+                if(updateBitMapInfo < SUCCESS_WRITEDISK){
+                    return updateBitMapInfo;
+                }
+
+                //temp Root Inode
+                inode tempRootInode;
+
+                //update the Inode block with the N_datablock value
+                int readRootInode = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &tempRootInode);
+                if(readDataTest < SUCCESS_READDISK){
+                    return readDataTest;
+                }
+
+                //update the root Inode with the data block value
+                tempRootInode.N_dataBlocks++;
+                //write the updated root Inode block to the data block value
+                int32_t write_result_root_inode = writeBlock((int) this->fd, ROOT_NODE_BLOCK_NUM, (void*) &tempRootInode);
+                if(write_result_root_inode < SUCCESS_WRITEDISK){
+                    return write_result_root_inode;
+                }
+
+                //write the updated block data to the memory
+                blockData = dataBlock();
+                memcpy(&blockData.directDataBlock[0], tempDataStorage, 9);
+                memcpy(&blockData.directDataBlock[0] + 9, &inodeNumber, sizeof(int32_t));
+            }
+
+            //write the block data to the currentBlockOffset
+            int write_ROOT_data_result = writeDataBlock(blockData, currentBlockOffset);
+
+            return write_ROOT_data_result;
+        }
+
+        /**
+         * @brief
+         * delets entry to the root dataBlock
+        */
 
         //close the open FD and adds it to the free list
         void closeOpenFD(fileDescriptor key){
@@ -282,15 +374,15 @@ class tfs
             this->openFileStruct.erase(key);
         }
         //update the bitmap
-        int updateBitMap(int offset, int value){
+        int32_t updateBitMap(int32_t offset, int32_t value){
             this->bit_map.bitmap[offset] = value;
 
             //write the block to the disk
-            int bitsWrite = writeBlock(this->fd, BITMAP_BLOCK_NUM, (void *)&this->bit_map);
+            int32_t bitsWrite = writeBlock(this->fd, BITMAP_BLOCK_NUM, (void *)&this->bit_map);
             return bitsWrite;
         }
         //deleting the file and updating struct
-        int deleteFileUpdate(fileDescriptor fd){
+        int32_t deleteFileUpdate(fileDescriptor fd){
             //store tje inode temp
             inode tempInode = openFileStruct[fd];
 
@@ -301,13 +393,13 @@ class tfs
 
             
             //update the bitmap table by removing the data block for corresponding Inode
-            int nextBlockNum = tempInode.first_dataBlock;
-            for(int i=0; i<tempInode.N_dataBlocks; i++){
+            int32_t nextBlockNum = tempInode.first_dataBlock;
+            for(int32_t i=0; i<tempInode.N_dataBlocks; i++){
                 //update the bit map for next data block num
                 updateBitMap(nextBlockNum, 0);
 
                 dataBlock tempDataBlock = dataBlock();
-                int bitsRead = readBlock(this->fd, nextBlockNum, (void*) &tempDataBlock);
+                int32_t bitsRead = readBlock(this->fd, nextBlockNum, (void*) &tempDataBlock);
                 if(bitsRead < SUCCESS_READDISK){
                     return bitsRead;
                 }
@@ -315,7 +407,7 @@ class tfs
             }
 
             //update the inode table itself
-            int bitsUpdate = updateBitMap(tempInode.f_inode, 0);
+            int32_t bitsUpdate = updateBitMap(tempInode.f_inode, 0);
             if(bitsUpdate < SUCCESS_WRITEDISK){
                 return bitsUpdate;
             }
@@ -329,7 +421,7 @@ library to open the specified file, and upon success, format the file to be
 mountable. This includes initializing all data to 0x00, setting magic
 numbers, initializing and writing the superblock and other metadata, etc.
 Must return a specified success/error code. */
-int tfs_mkfs(char *filename, int nBytes);
+int32_t tfs_mkfs(char *filename, int32_t nBytes);
 
 /* tfs_mount(char *filename) “mounts” a TinyFS file system located within an
 emulated libDisk disk called ‘filename’. tfs_unmount(void) “unmounts” the
@@ -337,8 +429,8 @@ currently mounted file system. As part of the mount operation, tfs_mount
 should verify the file system is the correct type. Only one file system may
 be mounted at a time. Use tfs_unmount to cleanly unmount the currently
 mounted file system. Must return a specified success/error code. */
-int tfs_mount(char *filename);
-int tfs_unmount(void);
+int32_t tfs_mount(char *filename);
+int32_t tfs_unmount(void);
 
 /* Opens a file for reading and writing on the currently mounted file system.
 Creates a dynamic resource table entry for the file (the structure that
@@ -348,22 +440,22 @@ filesystem is mounted. */
 fileDescriptor tfs_open(char *name);
 
 /* Closes the file and removes dynamic resource table entry */
-int tfs_close(fileDescriptor FD);
+int32_t tfs_close(fileDescriptor FD);
 
 /* Writes buffer ‘buffer’ of size ‘size’, which represents an entire file’s
 contents, to the file described by ‘FD’. Sets the file pointer to 0 (the
 start of file) when done. Returns success/error codes. */
-int tfs_write(fileDescriptor FD, char *buffer, int size);
+int32_t tfs_write(fileDescriptor FD, char *buffer, int32_t size);
 
 /* deletes a file and marks its blocks as free on disk. */
-int tfs_delete(fileDescriptor FD);
+int32_t tfs_delete(fileDescriptor FD);
 
 /* reads one byte from the file and copies it to ‘buffer’, using the current
 file pointer location and incrementing it by one upon success. If the file
 pointer is already at the end of the file then tfs_readByte() should return
 an error and not increment the file pointer. */
-int tfs_readByte(fileDescriptor FD, char *buffer);
+int32_t tfs_readByte(fileDescriptor FD, char *buffer);
 
 /* change the file pointer location to offset (absolute). Returns
 success/error codes.*/
-int tfs_seek(fileDescriptor FD, int offset);
+int32_t tfs_seek(fileDescriptor FD, int32_t offset);

@@ -4,9 +4,9 @@ using namespace std;
 
 tfs *tinyFS; /* Empty TinyFS */
 
-int tfs_mkfs(char *filename, int nBytes)
+int32_t tfs_mkfs(char *filename, int32_t nBytes)
 {
-    int numBlocks = nBytes / BLOCKSIZE; /* Maximum number of blocks supported by the tinyFS */
+    int32_t numBlocks = nBytes / BLOCKSIZE; /* Maximum number of blocks supported by the tinyFS */
 
     tfs tfsNew = tfs(numBlocks); /* New file system to be formatted to the disk */
 
@@ -24,9 +24,9 @@ int tfs_mkfs(char *filename, int nBytes)
 
     // Initialize all the data to 0x00
     char zero_bytes[BLOCKSIZE] = { 0 };
-    for (int curBlock = 0; curBlock < numBlocks; curBlock++)
+    for (int32_t curBlock = 0; curBlock < numBlocks; curBlock++)
     {
-        int write_result = writeBlock((int) tfsNew.fd,  curBlock, zero_bytes);
+        int32_t write_result = writeBlock((int) tfsNew.fd,  curBlock, zero_bytes);
 
         // Return error code from the result, if the system did not successfully write a block to disk
         if (write_result != SUCCESS_WRITEDISK)
@@ -37,7 +37,7 @@ int tfs_mkfs(char *filename, int nBytes)
     }
     
     // // Write the superblock to the disk
-    int sb_result = writeBlock((int) tfsNew.fd, SUPERBLOCK_NUM, (void*) tfsNew.getSuperblock());
+    int32_t sb_result = writeBlock((int) tfsNew.fd, SUPERBLOCK_NUM, (void*) tfsNew.getSuperblock());
     cout << "size sb:" << sizeof(*tfsNew.getSuperblock()) << endl;
     // Return error code from the result, if the system did not successfully write a superblock to disk
     if (sb_result != SUCCESS_WRITEDISK)
@@ -48,7 +48,7 @@ int tfs_mkfs(char *filename, int nBytes)
 
     // Write the root inode to the disk
     inode rootInode = inode();
-    int root_result = writeBlock((int) tfsNew.fd, ROOT_NODE_BLOCK_NUM, (void*) &rootInode);
+    int32_t root_result = writeBlock((int) tfsNew.fd, ROOT_NODE_BLOCK_NUM, (void*) &rootInode);
     cout << "size root inode:" << sizeof(rootInode) << endl;
     // Return error code from the result, if the system did not successfulyl write a root inode block to the disk
     if (root_result != SUCCESS_WRITEDISK)
@@ -59,7 +59,7 @@ int tfs_mkfs(char *filename, int nBytes)
 
     // Write the bitmap to the disk
     bitMap initBitMap = bitMap();
-    int bitmap_result = writeBlock((int) tfsNew.fd, BITMAP_BLOCK_NUM, (void*) &initBitMap);
+    int32_t bitmap_result = writeBlock((int) tfsNew.fd, BITMAP_BLOCK_NUM, (void*) &initBitMap);
     cout << "size bitmap:" << sizeof(initBitMap) << endl;
     // Return error code from the result, if the system did not successfulyl write a bitmap block to the disk
     if (bitmap_result != SUCCESS_WRITEDISK)
@@ -77,13 +77,13 @@ int tfs_mkfs(char *filename, int nBytes)
     return SUCCESS_TFS_MKFS;
 }
 
-int tfs_mount(char* filename)
+int32_t tfs_mount(char* filename)
 {
     tinyFS = new tfs();
 
     // Open the disk and read the superblock from it
     tinyFS->fd = openDisk(filename, 0);
-    int read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+    int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
     if (read_result != SUCCESS_READDISK)
     {
         delete(tinyFS);
@@ -105,7 +105,7 @@ int tfs_mount(char* filename)
     }
 }
 
-int tfs_unmount(void)
+int32_t tfs_unmount(void)
 {
     if (tinyFS != NULL)
     {
@@ -122,7 +122,7 @@ fileDescriptor tfs_open(char *name){
     if(tinyFS->fd < 0){
         return ERROR_TFS_OPEN;
     }
-    int read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+    int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
     if (read_result != SUCCESS_READDISK)
     {
         delete(tinyFS);
@@ -133,12 +133,12 @@ fileDescriptor tfs_open(char *name){
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
     {
         //find the inode and corresponding FD for this file
-        int tempInodeNumber = tinyFS->getNextAvailableInode();
+        int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
         fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
 
         //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
         inode tempNode = inode(tempInodeNumber);
-        int updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
+        int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
         if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
             return updateBitMapReturnValue;
         }

@@ -1,7 +1,7 @@
 #include "libDisk.h"
-int currFD;
+int32_t currFD;
 
-int openDisk(char *filename, int nBytes){
+int32_t openDisk(char *filename, int32_t nBytes){
     FILE * diskFIle;
     bool existFD = false;
     // if nbytes not perfectly divisible by the block size
@@ -55,7 +55,7 @@ int openDisk(char *filename, int nBytes){
 }
 
 
-int readBlock(int disk, int bNum, void *block){
+int32_t readBlock(int32_t disk, int32_t bNum, void *block){
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
@@ -73,7 +73,7 @@ int readBlock(int disk, int bNum, void *block){
     }
 
     //read the data from the disk based on the BLOCK size
-    int bytesRead = read(disk, (char *)block, BLOCKSIZE);
+    int32_t bytesRead = read(disk, (char *)block, BLOCKSIZE);
     if(bytesRead == -1){
         return ERROR_DISK_READ;
     }
@@ -82,7 +82,7 @@ int readBlock(int disk, int bNum, void *block){
     return SUCCESS_READDISK;
 }
 
-int writeBlock(int disk, int bNum, void *block){
+int32_t writeBlock(int32_t disk, int32_t bNum, void *block){
     //if the disk file exist, check the size 
     struct stat fileStat;
     if (fstat(disk, &fileStat) == -1) {
@@ -100,7 +100,7 @@ int writeBlock(int disk, int bNum, void *block){
     }
 
     //read the data from the disk based on the BLOCK size
-    int bytesRead = write(disk, (char *)block, BLOCKSIZE);
+    int32_t bytesRead = write(disk, (char *)block, BLOCKSIZE);
     if(bytesRead == -1){
         return ERROR_DISK_WRITE;
     }
@@ -109,7 +109,7 @@ int writeBlock(int disk, int bNum, void *block){
     return SUCCESS_WRITEDISK;
 }
 
-void closeDisk(int disk){
+void closeDisk(int32_t disk){
     //close the file using file descriptor
     if(close(disk) == -1){
         return;

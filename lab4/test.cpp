@@ -2,7 +2,7 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
+int32_t main(int32_t argc, char* argv[])
 {
     printf("Hello world\n");
 
@@ -11,11 +11,11 @@ int main(int argc, char* argv[])
     {
         diskFileName = argv[1];
     }
-    // int mkfs_result = tfs_mkfs((char*)"disk1", DEFAULT_DISK_SIZE);
+    // int32_t mkfs_result = tfs_mkfs((char*)"disk1", DEFAULT_DISK_SIZE);
     // cout << "mkfs result is " << mkfs_result << endl;
 
 
-    int mount_result = tfs_mount(diskFileName);
+    int32_t mount_result = tfs_mount(diskFileName);
     cout << "mount result is " << mount_result << endl;
 
     return 0;

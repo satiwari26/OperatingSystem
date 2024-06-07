@@ -66,29 +66,29 @@
  * @brief
  * disk file pointer list for all the open DISKS
 */
-extern int currFD;
+extern int32_t currFD;
 
 
 /**
  * @brief
  * opens the disk file and resizes it based on the nBytes provided to it
 */
-int openDisk(char *filename, int nBytes);
+int32_t openDisk(char *filename, int32_t nBytes);
 
 /**
  * @brief
  * read block data from the disk file
 */
-int readBlock(int disk, int bNum, void *block);
+int32_t readBlock(int32_t disk, int32_t bNum, void *block);
 
 /**
  * @brief
  * write block data to the disk file
 */
-int writeBlock(int disk, int bNum, void *block);
+int32_t writeBlock(int32_t disk, int32_t bNum, void *block);
 
 /**
  * @brief
  * closes the disk file so no read or write can be performed to it
 */
-void closeDisk(int disk);
+void closeDisk(int32_t disk);
