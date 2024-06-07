@@ -82,6 +82,20 @@ typedef struct inode
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
+
+    /* Bad inode constructor, for use in returning a "NULL" version of an inode struct */
+    inode(bool badInode)
+    {
+        this->f_inode = -1;
+        this->f_offset = -1;
+        this->f_size = -1;
+        this->first_dataBlock = -1;
+        this->N_dataBlocks = -1;
+        
+        for(int32_t i = 0; i < 236; i++) {
+            this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
+        }
+    }
 }__attribute__((__packed__)) inode; // Must pack to avoid compiler alignments changing the size of the struct (to maintain 256 bytes)
 
 /**
@@ -277,28 +291,28 @@ class tfs
             int32_t newInodeNumber = this->getNextAvailableInode();
             if (newInodeNumber <= ROOT_NODE_FIRST_DATA_BLOCK)
             {
-                return -1;
+                return inode(false);
             }
 
             //create a new InodeBlock add it the file, update the bitMap, create datablock, update the root node with name-inode value pair
             inode newInode = inode(newInodeNumber, 0);
             int32_t updateBitMapReturnValue = this->updateBitMap(newInodeNumber, 1);  //update the bitmap for the corresponding
             if(updateBitMapReturnValue < SUCCESS_WRITEDISK) {
-                return updateBitMapReturnValue;
+                return inode(false);
             }
 
             // Update the name-value pairs to hold the new inode name and number
             int writeRootEntryResult = this->writeRootDataEntry(name, newInodeNumber);
             if (writeRootEntryResult < SUCCESS_WRITEDISK)
             {
-                return writeRootEntryResult;
+                return inode(false);
             }
 
             // Write the new inode to disk (initially empty)
             int writeInodeResult = this->writeInodeBlock(newInode, newInode.f_inode);
             if (writeInodeResult < SUCCESS_WRITEDISK)
             {
-                return writeInodeResult;
+                return inode(false);
             }
             
             return newInode;

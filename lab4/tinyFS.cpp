@@ -149,9 +149,9 @@ fileDescriptor tfs_open(char *name)
         if (fileInodeNum == -1)
         {
             fileInode = tinyFS->createFile(name);
-            if (fileInodeNum < SUCCESS_TFS_CREATEFILE)
+            if (fileInode.f_inode < SUCCESS_TFS_CREATEFILE)
             {
-                return fileInodeNum; // Return error stored in the fileInode
+                return ERROR_TFS_CREATEFILE; // Return error stored in the fileInode
             }
         }
         // File does exist, pull its inode data from the disk
@@ -197,11 +197,11 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 
     // Find the corresponding data block through its index and the offset, to the byte, within that data block
     // 247 bytes refers to the max number of entries that can be held per data block
-    int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
+    int32_t blockIndex = ceil((float) inodeToRead.f_offset / (float) DATABLOCK_MAXSIZE_BYTES);
     int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
     dataBlock dataBlockTemp;
 
-    if (inodeToRead.f_offset >= inodeToRead.N_dataBlocks * DATABLOCK_MAXSIZE_BYTES)
+    if (inodeToRead.f_offset >= inodeToRead.f_size)
     {
         return ERROR_TFS_READBYTE;
     }

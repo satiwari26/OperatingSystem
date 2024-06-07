@@ -19,6 +19,9 @@
 #ifndef ERROR_TFS_SEEK
 #define ERROR_TFS_SEEK -5000 /* Failed to read a byte from a file in the file system */
 #endif
+#ifndef ERROR_TFS_CREATEFILE
+#define ERROR_TFS_CREATEFILE -6000 /* Failed to read a byte from a file in the file system */
+#endif
 
 /** ERROR CODES BEGIN **/
 /* Open disk-related errors*/
