@@ -56,19 +56,23 @@
 #ifndef SUCCESS_TFS_SEEK
 #define SUCCESS_TFS_SEEK 0 /* Successfully seek to an offset in a file, on a file system */
 #endif
+#ifndef SUCCESS_TFS_CREATEFILE
+#define SUCCESS_TFS_CREATEFILE 0 /* Successfully created a new file, on a file system */
+#endif
 
 /*********************************************************
  *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS. *
  *********************************************************/
-#define INODE_COUNT 16
 #define SUPERBLOCK_NUM 0
 #define BITMAP_BLOCK_NUM 2
 #define ROOT_NODE_BLOCK_NUM 1
 #define ROOT_NODE_FIRST_DATA_BLOCK 3
 #define MAX_FILENAME_LEN 8
-#define DATABLOCK_MAX_ENTRIES 19
-#define DATABLOCK_ENTRY_SIZE 13
-#define DATABLOCK_MAXSIZE_BYTES (DATABLOCK_MAX_ENTRIES * DATABLOCK_ENTRY_SIZE)
-
+#define DATABLOCK_FILENAME_SIZE 9   // 8 filename length + 1 for the null terminator
+#define DATABLOCK_MAX_ENTRIES 19    // 19 entries of name-inode pairs (13 bytes each) fit in the datablock, some padding will be needed to fill the rest of the block
+#define DATABLOCK_ENTRY_SIZE (int) (DATABLOCK_FILENAME_SIZE + sizeof(int32_t))  // Type-casted to int to avoid signedness warnings when using in for-loops
+#define DATABLOCK_MAXSIZE_BYTES (int) (DATABLOCK_MAX_ENTRIES * DATABLOCK_ENTRY_SIZE) // Type-casted to int to avoid signedness warnings when using in for-loops
+#define BLOCK_ALLOCATED 1  
+#define BLOCK_UNALLOCATED 0
 /* END OF TEST VARIABLES/MACROS */
 

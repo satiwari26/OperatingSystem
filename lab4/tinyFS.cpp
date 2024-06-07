@@ -124,59 +124,64 @@ int32_t tfs_unmount(void)
 
 fileDescriptor tfs_open(char *name)
 {    
-    // Check if the root inode exist
-    if(tinyFS->fd < 0){
+    // Check if the file system is mounted (and of the correct type) and that the disk opened successfully
+    // tinyFS is null if the mount failed (or has not been called)
+    if(tinyFS == NULL || tinyFS->fd < 0) {
         return ERROR_TFS_OPEN;
     }
+
     int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
     if (read_result != SUCCESS_READDISK)
     {
-        delete(tinyFS);
         return read_result;
     }
 
     // Check that the superblock is mounted or not
+    // WE TECHNICALLY DO NOT NEED THIS IF STATEMENT. THE TINYFS PTR WILL ONLY BE INSTANTIATED IF THE SYSTEM IS PROPERLY MOUNTED. REDUNDANT CHECK!!
+    // TODO: consult the removal of this if statement (or if it really does need to be used aka not redundant)
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
     {
-        //find the inode and corresponding FD for this file
-        int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
-        fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
+        // TODO: Can prob modify filExists to directly return an inode instead of inode num
+        int fileInodeNum = tinyFS->fileExists(name);
+        inode fileInode;
 
-        //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
-        inode tempNode = inode(tempInodeNumber);
-        int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
-        if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
-            return updateBitMapReturnValue;
+        // File does not exist, create a new one
+        if (fileInodeNum == -1)
+        {
+            fileInode = tinyFS->createFile(name);
+            if (fileInodeNum < SUCCESS_TFS_CREATEFILE)
+            {
+                return fileInodeNum; // Return error stored in the fileInode
+            }
         }
-        tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
+        // File does exist, pull its inode data from the disk
+        else
+        {
+            int fileReadResult = readBlock(tinyFS->fd, fileInodeNum, (void*) &fileInode);
+            if (fileReadResult < SUCCESS_READDISK)
+            {
+                return fileReadResult;
+            }
+        }
 
+        // Associate a new file descriptor to the file inode and return it to the user
+        fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
+        tinyFS->setOpenFileStruct(tempVirtualFD, fileInode);  //update the openFileStruct
 
-
-
-
-        /*we need to chage the inode next data block from pointer to offset number*/
-
-
+        return tempVirtualFD;
     }
     else 
     {
-        delete(tinyFS);
-        return ERROR_TFS_MOUNT;
+        return ERROR_TFS_OPEN;
     }
-
-
-    //create root inode, write to disk
-    inode rootInode;
-
-    //create dataBlock, write dataStruct to it, write to disk
-
-    //update the openFileStruct
 
     return 0;
 }
 
 int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 {
+    // Check if the file system is mounted (and of the correct type) and that the disk opened successfully
+    // tinyFS is null if the mount failed (or has not been called)
     if (tinyFS == NULL || tinyFS->fd < 0)
     {
         return ERROR_TFS_READBYTE;
@@ -191,7 +196,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
     }
 
     // Find the corresponding data block through its index and the offset, to the byte, within that data block
-    // 247 bytes refers to the 19 pairs of 13-byte name-inode entries that can be held per data block
+    // 247 bytes refers to the max number of entries that can be held per data block
     int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
     int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
     dataBlock dataBlockTemp;

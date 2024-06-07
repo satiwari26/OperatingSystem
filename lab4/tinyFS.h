@@ -214,6 +214,77 @@ class tfs
 
         /**
          * @brief
+         * @return true, if the name is
+        */
+
+        /**
+         * @brief
+         * @return the file's inode number, if the file exist in the file system, else -1
+        */
+        int32_t fileExists(char* name)
+        {
+            // Grab the root node first data block 
+            dataBlock rootNodeData;
+            int32_t rootReadResult = readBlock(this->fd, ROOT_NODE_FIRST_DATA_BLOCK, &rootNodeData);
+            if(rootReadResult < SUCCESS_READDISK) {
+                return rootReadResult;
+            }
+
+            // Search all name-value pairs for the file name
+            while (rootNodeData.nextDataBlock != -1)
+            {
+                // Read the next data block, for use in the NEXT iteration of this while loop
+                dataBlock nextRootNodeData;
+                int32_t nextRootReadResult = readBlock(this->fd, rootNodeData.nextDataBlock, &nextRootNodeData);
+                if(nextRootReadResult < SUCCESS_READDISK) {
+                    return nextRootReadResult;
+                }
+
+                for (int curPairOffset = 0; curPairOffset < DATABLOCK_MAXSIZE_BYTES; curPairOffset+=DATABLOCK_ENTRY_SIZE)
+                {
+                    char curPairFileName[DATABLOCK_FILENAME_SIZE] = { '\0' }; // Initialized to all null terminator
+                    // If the file is equal, then we need to retrieve the corresponding inode number and check if that block
+                    // has been allocated on the bitmap (to ensure that it is a stable entry)
+                    int32_t curPairInodeNum = -1;
+
+                    memcpy(curPairFileName, &rootNodeData.directDataBlock[curPairOffset], DATABLOCK_FILENAME_SIZE);
+                    memcpy(&curPairInodeNum, &rootNodeData.directDataBlock[curPairOffset] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
+
+                    if (strcmp(name, curPairFileName) == 0 && this->bit_map.bitmap[curPairInodeNum] == BLOCK_ALLOCATED)
+                    {
+                        // If the file has been allocated (i.e. it's a STABLE entry), then return the file's inode number as the file exists...
+                        return curPairInodeNum;
+                    }
+                }
+                rootNodeData = nextRootNodeData; // Move onto the next data block to be read
+            }
+            // Else return -1 as the file does not exist (either it's name was not found in the entries or it was not allocated properly)
+            return -1;
+        }
+
+        /**
+         * @brief
+         * @return true, if the file is successfully created within the file system, else false
+        */
+        inode createFile(char* name)
+        {
+            // Find the inode for this file
+            int32_t tempInodeNumber = this->getNextAvailableInode();
+            
+            //create a new InodeBlock add it the file, update the bitMap, create datablock, update the root node with name-inode value pair
+            inode tempNode = inode(tempInodeNumber);
+            int32_t updateBitMapReturnValue = this->updateBitMap(tempInodeNumber, 1);  //update the bitmap for the corresponding
+            if(updateBitMapReturnValue < SUCCESS_WRITEDISK) {
+                return updateBitMapReturnValue;
+            }
+
+            this->writeRootDataEntry(name, tempInodeNumber);
+
+            return tempNode;
+        }
+
+        /**
+         * @brief
          * writes Inode content to the specified block
         */
         int32_t writeInodeBlock(inode node, int32_t blockNumber){
@@ -250,14 +321,14 @@ class tfs
                 }
             }
 
-            char tempDataStorage[9] = {'\0'};
+            char tempDataStorage[DATABLOCK_FILENAME_SIZE] = {'\0'};
             bool moreSpaceRequired = true;
-            strncpy(tempDataStorage, fileName, 9);
-            for(int32_t i = 0; i < 247; i += 13){
+            strncpy(tempDataStorage, fileName, DATABLOCK_FILENAME_SIZE);
+            for(int32_t i = 0; i < DATABLOCK_MAXSIZE_BYTES; i += DATABLOCK_ENTRY_SIZE){
                 if(blockData.directDataBlock[i] == '\0'){
                     moreSpaceRequired = false;
-                    memcpy(&blockData.directDataBlock[i], tempDataStorage, 9);
-                    memcpy(&blockData.directDataBlock[i] + 9, &inodeNumber, sizeof(int32_t));
+                    memcpy(&blockData.directDataBlock[i], tempDataStorage, DATABLOCK_FILENAME_SIZE);
+                    memcpy(&blockData.directDataBlock[i] + DATABLOCK_FILENAME_SIZE, &inodeNumber, sizeof(int32_t));
                     break;
                 }
             }
@@ -297,8 +368,8 @@ class tfs
 
                 //write the updated block data to the memory
                 blockData = dataBlock();
-                memcpy(&blockData.directDataBlock[0], tempDataStorage, 9);
-                memcpy(&blockData.directDataBlock[0] + 9, &inodeNumber, sizeof(int32_t));
+                memcpy(&blockData.directDataBlock[0], tempDataStorage, DATABLOCK_FILENAME_SIZE);
+                memcpy(&blockData.directDataBlock[0] + DATABLOCK_FILENAME_SIZE, &inodeNumber, sizeof(int32_t));
             }
 
             //write the block data to the currentBlockOffset
