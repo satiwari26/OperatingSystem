@@ -157,6 +157,15 @@ fileDescriptor tfs_open(char *name)
         // File does exist, pull its inode data from the disk
         else
         {
+            // if file is already open, return that file descriptor
+            for (auto& filePair : tinyFS->openFileStruct)
+            {
+                if (filePair.second.f_inode == fileInodeNum)
+                {
+                    return filePair.second.f_inode;
+                }
+            }
+            
             int fileReadResult = readBlock(tinyFS->fd, fileInodeNum, (void*) &fileInode);
             if (fileReadResult < SUCCESS_READDISK)
             {
@@ -176,6 +185,12 @@ fileDescriptor tfs_open(char *name)
     }
 
     return 0;
+}
+
+int32_t tfs_close(fileDescriptor FD)
+{
+    tinyFS->openFileStruct.erase(FD);
+    tinyFS->freeFileDescriptors.push_back(FD);
 }
 
 int32_t tfs_readByte(fileDescriptor FD, char *buffer)
