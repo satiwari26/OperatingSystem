@@ -268,19 +268,35 @@ class tfs
         */
         inode createFile(char* name)
         {
-            // Find the inode for this file
-            int32_t tempInodeNumber = this->getNextAvailableInode();
-            
+            // Find the inode for this file and make sure its not 0-3 (the reserved block nums for sb, root, etc)
+            int32_t newInodeNumber = this->getNextAvailableInode();
+            if (newInodeNumber <= ROOT_NODE_FIRST_DATA_BLOCK)
+            {
+                return -1;
+            }
+
             //create a new InodeBlock add it the file, update the bitMap, create datablock, update the root node with name-inode value pair
-            inode tempNode = inode(tempInodeNumber);
-            int32_t updateBitMapReturnValue = this->updateBitMap(tempInodeNumber, 1);  //update the bitmap for the corresponding
+            inode newInode = inode(newInodeNumber);
+            int32_t updateBitMapReturnValue = this->updateBitMap(newInodeNumber, 1);  //update the bitmap for the corresponding
             if(updateBitMapReturnValue < SUCCESS_WRITEDISK) {
                 return updateBitMapReturnValue;
             }
 
-            this->writeRootDataEntry(name, tempInodeNumber);
+            // Update the name-value pairs to hold the new inode name and number
+            int writeRootEntryResult = this->writeRootDataEntry(name, newInodeNumber);
+            if (writeRootEntryResult < SUCCESS_WRITEDISK)
+            {
+                return writeRootEntryResult;
+            }
 
-            return tempNode;
+            // Write the new inode to disk (initially empty)
+            int writeInodeResult = this->writeInodeBlock(newInode, newInode.f_inode);
+            if (writeInodeResult < SUCCESS_WRITEDISK)
+            {
+                return writeInodeResult;
+            }
+            
+            return newInode;
         }
 
         /**
@@ -315,9 +331,9 @@ class tfs
             //get to the next data block
             while(blockData.nextDataBlock != -1){
                 currentBlockOffset = blockData.nextDataBlock;
-                int32_t readDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
-                if(readDataTest < SUCCESS_READDISK){
-                    return readDataTest;
+                int32_t readNextDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
+                if(readNextDataTest < SUCCESS_READDISK){
+                    return readNextDataTest;
                 }
             }
 
