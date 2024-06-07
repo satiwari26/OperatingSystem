@@ -52,30 +52,33 @@ typedef struct inode
     int32_t f_inode; /* File inode number */
     int32_t first_dataBlock; // pointer to the data block of the current file
     int32_t f_offset; // contains the data size of the file
+    int32_t f_size;
     int32_t N_dataBlocks;   // contains the number of datablock information
-    char paddedBlock[240];
+    char paddedBlock[236];
 
     /* Default constructor, typically for root inode */
     inode(){
         this->f_inode = ROOT_NODE_BLOCK_NUM; /* Root inode is stored at number 2 */
         this->first_dataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
         this->f_offset = 0;
+        this->f_size = 0;
         this->N_dataBlocks = 1; // One, for the root inode name-pairs datablock (initially empty datablock, but it exists)
 
-        for(int32_t i = 0; i < 240; i++) {
+        for(int32_t i = 0; i < 236; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
         std::cout << "size inode:" << sizeof(inode) << std::endl;
     }
 
     /* Constructor */
-    inode(int32_t inode_num){
+    inode(int32_t inode_num, int32_t size){
         this->first_dataBlock = -1;
         this->f_offset = 0;
+        this->f_size =  size;
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
 
-        for(int32_t i = 0; i < 240; i++) {
+        for(int32_t i = 0; i < 236; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
@@ -278,7 +281,7 @@ class tfs
             }
 
             //create a new InodeBlock add it the file, update the bitMap, create datablock, update the root node with name-inode value pair
-            inode newInode = inode(newInodeNumber);
+            inode newInode = inode(newInodeNumber, 0);
             int32_t updateBitMapReturnValue = this->updateBitMap(newInodeNumber, 1);  //update the bitmap for the corresponding
             if(updateBitMapReturnValue < SUCCESS_WRITEDISK) {
                 return updateBitMapReturnValue;
