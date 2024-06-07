@@ -81,17 +81,21 @@ int32_t tfs_mount(char* filename)
 {
     tinyFS = new tfs();
 
-    // Open the disk and read the superblock from it
+    // Open the disk and store the file descriptor in the TFS
     tinyFS->fd = openDisk(filename, 0);
-    int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+    if (tinyFS->fd < SUCCESS_OPENDISK)
+    {
+        delete(tinyFS);
+        return tinyFS->fd; // Return error from opening disk, stored in fd result
+    }
+    
+    // Read the superblock from the disk
+    int read_result = readBlock(tinyFS->fd, SUPERBLOCK_NUM, (void*) tinyFS->getSuperblock());
     if (read_result != SUCCESS_READDISK)
     {
         delete(tinyFS);
-        return read_result;
+        return read_result; // Return error from reading disk, stored in read_result
     }
-
-    //set the total number of blocks in the tinyFS block
-    tinyFS->totalNumBlocksOnDisk = tinyFS->getSuperblock()->sb_totalBlocks;
 
     // Check that the superblock magic number matches the TinyFS magic number
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
@@ -109,9 +113,10 @@ int32_t tfs_unmount(void)
 {
     if (tinyFS != NULL)
     {
-        closeDisk(tinyFS->fd);
+        int diskToClose = tinyFS->fd;
         delete(tinyFS);
-
+        closeDisk(diskToClose);
+        
         return 0;
     }
     return ERROR_TFS_UNMOUNT;

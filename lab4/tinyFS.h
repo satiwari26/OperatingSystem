@@ -213,10 +213,9 @@ class tfs
         superblock sb; /* Superblock for the TinyFS file system */
 
     public:
-        int32_t totalNumBlocksOnDisk;
         fileDescriptor fd = -1; /* Global file descriptor for current disk */
         fileDescriptor virtualFD = 2; /*virtual FD for to keep track of the open virtual files*/
-        vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
+        std::vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
         std::unordered_map<fileDescriptor , inode> openFileStruct; /* A mapping between the inodes and virtual fileDescriptor maintained by tfs_open() and tfs_close()*/
         bitMap bit_map; //keeps track of the bitmap struct 
         // Constructor
@@ -241,9 +240,9 @@ class tfs
             return &this->sb;
         }
 
-        int32_t getNextAvailableInode(){
+        int32_t getNextAvailableInode() {
             int32_t tempInode;
-            for(int32_t i = 0; i < totalNumBlocksOnDisk; i++){
+            for(int32_t i = 0; i < sb.sb_totalBlocks; i++){
                 if(this->bit_map.bitmap[i] == 0){
                     tempInode = i;
                     break;
@@ -290,7 +289,7 @@ class tfs
         */
         int32_t writeRootDataEntry(char * fileName, int32_t inodeNumber){
             dataBlock blockData;
-            int readDataTest = readBlock(this->fd, ROOT_NODE_FIRST_DATA_BLOCK, &blockData);
+            int32_t readDataTest = readBlock(this->fd, ROOT_NODE_FIRST_DATA_BLOCK, &blockData);
             if(readDataTest < SUCCESS_READDISK){
                 return readDataTest;
             }
@@ -300,7 +299,7 @@ class tfs
             //get to the next data block
             while(blockData.nextDataBlock != -1){
                 currentBlockOffset = blockData.nextDataBlock;
-                int readDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
+                int32_t readDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
                 if(readDataTest < SUCCESS_READDISK){
                     return readDataTest;
                 }
@@ -338,7 +337,7 @@ class tfs
                 inode tempRootInode;
 
                 //update the Inode block with the N_datablock value
-                int readRootInode = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &tempRootInode);
+                int32_t readRootInode = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &tempRootInode);
                 if(readDataTest < SUCCESS_READDISK){
                     return readDataTest;
                 }
@@ -358,7 +357,7 @@ class tfs
             }
 
             //write the block data to the currentBlockOffset
-            int write_ROOT_data_result = writeDataBlock(blockData, currentBlockOffset);
+            int32_t write_ROOT_data_result = writeDataBlock(blockData, currentBlockOffset);
 
             return write_ROOT_data_result;
         }
