@@ -123,51 +123,55 @@ int32_t tfs_unmount(void)
 }
 
 fileDescriptor tfs_open(char *name){
-    //check if the root inode exist
-    if(tinyFS->fd < 0){
-        return ERROR_TFS_OPEN;
-    }
-    int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
-    if (read_result != SUCCESS_READDISK)
-    {
-        delete(tinyFS);
-        return read_result;
-    }
+    
+    
+        // //check if the root inode exist
+        // if(tinyFS->fd < 0){
+        //     return ERROR_TFS_OPEN;
+        // }
+        // int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+        // if (read_result != SUCCESS_READDISK)
+        // {
+        //     delete(tinyFS);
+        //     return read_result;
+        // }
 
-    // Check that the superblock is mounted or not
-    if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
-    {
-        //find the inode and corresponding FD for this file
-        int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
-        fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
+        // // Check that the superblock is mounted or not
+        // if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
+        // {
+        //     //find the inode and corresponding FD for this file
+        //     int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
+        //     fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
 
-        //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
-        inode tempNode = inode(tempInodeNumber);
-        int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
-        if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
-            return updateBitMapReturnValue;
-        }
-        tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
-
-
-
-
-
-        /*we need to chage the inode next data block from pointer to offset number*/
+        //     //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
+        //     inode tempNode = inode(tempInodeNumber);
+        //     int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
+        //     if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
+        //         return updateBitMapReturnValue;
+        //     }
+        //     tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
 
 
-    }
-    else 
-    {
-        delete(tinyFS);
-        return ERROR_TFS_MOUNT;
-    }
 
 
-    //create root inode, write to disk
-    inode rootInode;
 
-    //create dataBlock, write dataStruct to it, write to disk
+        //     /*we need to chage the inode next data block from pointer to offset number*/
 
-    //update the openFileStruct
+
+        // }
+        // else 
+        // {
+        //     delete(tinyFS);
+        //     return ERROR_TFS_MOUNT;
+        // }
+
+
+        // //create root inode, write to disk
+        // inode rootInode;
+
+        // //create dataBlock, write dataStruct to it, write to disk
+
+        // //update the openFileStruct
+
+    return 0;
 }

@@ -338,8 +338,8 @@ class tfs
 
                 //update the root inode block with the N_datablock value
                 int32_t readRootInode = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &tempRootInode);
-                if(readDataTest < SUCCESS_READDISK){
-                    return readDataTest;
+                if(readRootInode < SUCCESS_READDISK){
+                    return readRootInode;
                 }
 
                 //update the root Inode with the data block value
