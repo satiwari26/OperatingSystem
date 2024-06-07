@@ -9,61 +9,6 @@
 
 #include "libDisk.h"
 
-/* use this name for a default disk file name */
-#ifndef DEFAULT_DISK_NAME
-#define DEFAULT_DISK_NAME "tinyFSDisk"
-#endif
-
-/**
- * TinyFS superblock macros
-*/
-#ifndef TFS_SB_MAGIC_NUM
-#define TFS_SB_MAGIC_NUM 0x5A /* The magic number for the TinyFS */
-#endif
-#ifndef TFS_SB_ROOTNUM_INIT
-#define TFS_SB_ROOTNUM_INIT 0 /* The initial root number for the TinyFS superblock */
-#endif
-#ifndef TFS_SB_TOTALCT_INIT
-#define TFS_SB_TOTALCT_INIT 0 /* The initial total file count for the TinyFS superblock */
-#endif
-#ifndef TFS_SB_MAPSIZE
-#define TFS_SB_MAPSIZE (256 * 8) /* The bit-map size, in bits, in the TinyFS superblock. It uses up the rest of the space in the superblock struct. */
-#endif
-
-/**
- * TinyFS success/error code macros
-*/
-#ifndef SUCCESS_TFS_MKFS
-#define SUCCESS_TFS_MKFS 0 /* Successfully made a file system */
-#endif
-#ifndef SUCCESS_TFS_MOUNT
-#define SUCCESS_TFS_MOUNT 0 /* Successfully mounted a file system */
-#endif
-#ifndef ERROR_TFS_MKFS
-#define ERROR_TFS_MKFS -1000 /* Failed to make a file system */
-#endif
-#ifndef ERROR_TFS_MOUNT
-#define ERROR_TFS_MOUNT -1001 /* Failed to make a file system */
-#endif
-#ifndef ERROR_TFS_UNMOUNT
-#define ERROR_TFS_UNMOUNT -1002
-#endif
-#ifndef ERROR_TFS_OPEN
-#define ERROR_TFS_OPEN -3000
-#endif
-
-/*****
- *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS.
- *****/
-#define INODE_COUNT 16
-#define SUPERBLOCK_NUM 0
-#define BITMAP_BLOCK_NUM 2
-#define ROOT_NODE_BLOCK_NUM 1
-#define ROOT_NODE_FIRST_DATA_BLOCK 3
-#define ROOT_INODE_NUM 1
-#define MAX_FILENAME_LEN 8
-/* END OF TEST VARIABLES/MACROS */
-
 typedef int32_t fileDescriptor;
 
 /** @brief
@@ -104,15 +49,15 @@ typedef struct inode
 {
     int32_t f_inode; /* File inode number */
     int32_t first_dataBlock; // pointer to the data block of the current file
-    int32_t f_size; // contains the data size of the file
+    int32_t f_offset; // contains the data size of the file
     int32_t N_dataBlocks;   // contains the number of datablock information
     char paddedBlock[240];
 
     /* Default constructor, typically for root inode */
     inode(){
-        this->f_inode = ROOT_INODE_NUM; /* Root inode is stored at number 2 */
+        this->f_inode = ROOT_NODE_BLOCK_NUM; /* Root inode is stored at number 2 */
         this->first_dataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
-        this->f_size = 0;
+        this->f_offset = 0;
         this->N_dataBlocks = 1; // One, for the root inode name-pairs datablock (initially empty datablock, but it exists)
 
         for(int32_t i = 0; i < 240; i++) {
@@ -124,7 +69,7 @@ typedef struct inode
     /* Constructor */
     inode(int32_t inode_num){
         this->first_dataBlock = -1;
-        this->f_size = 0;
+        this->f_offset = 0;
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
 
