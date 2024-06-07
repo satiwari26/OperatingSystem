@@ -320,12 +320,12 @@ class tfs
             if(moreSpaceRequired){
                 //if not enough space to store the data on the current block - allocate a new block
                 blockData.nextDataBlock = getNextAvailableInode();
-                currentBlockOffset = blockData.nextDataBlock;
                 //write this block to the disk for the current block update
                 int32_t write_result = writeBlock((int) this->fd, currentBlockOffset, (void*) &blockData);
                 if(write_result < SUCCESS_WRITEDISK){
                     return write_result;
                 }
+                currentBlockOffset = blockData.nextDataBlock;
 
                 //update the bitMap for new block allocation
                 int32_t updateBitMapInfo = updateBitMap(blockData.nextDataBlock , 1);
@@ -336,7 +336,7 @@ class tfs
                 //temp Root Inode
                 inode tempRootInode;
 
-                //update the Inode block with the N_datablock value
+                //update the root inode block with the N_datablock value
                 int32_t readRootInode = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &tempRootInode);
                 if(readDataTest < SUCCESS_READDISK){
                     return readDataTest;
