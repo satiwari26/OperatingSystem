@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
+#include <array>
+#include <cmath>
 
 #include "libDisk.h"
 
@@ -396,8 +398,123 @@ class tfs
 
         /**
          * @brief
-         * delets entry to the root dataBlock
+         * delete entry from the Root Inode
         */
+        int deleteRootDataEntry(inode nodeVal){
+            int currDataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
+            vector<std::array<char, 13>> dataEntryArr;  //for temporary storing the data of each entry in this block
+
+            vector<int32_t> dataBlockNum;   //to store the data block Number, except for the firstDataBlock
+
+            //find the inode-filename entry in the inode datablock and delete it
+            dataBlock dBlock = dataBlock();
+            do{
+                int32_t read_first_Root_dataBlock = readBlock(this->fd, currDataBlock, &dBlock);
+                if(read_first_Root_dataBlock < SUCCESS_READDISK){
+                    return read_first_Root_dataBlock;
+                }
+
+                for(int i = 0; i < 247; i += 13){
+                    int32_t currInodeVal;
+                    memcpy(&currInodeVal, &dBlock.directDataBlock[i] + 9, sizeof(int32_t));
+
+                    //check if the currentInodeVal is the nodeVal that we want to delete
+                    if(currInodeVal == nodeVal.f_inode){
+                        char dummyData[13] = {'\0'};
+                        memcpy(&dBlock.directDataBlock[i], dummyData, 13);  //rewrite those 13 bytes to null chars
+                        break;
+                    }
+                    //store the entry in the dataEntryArr
+                    else{
+                        std::array<char, 13> tempData;
+                        memcpy(tempData.data(), &dBlock.directDataBlock[i], 13);
+                        dataEntryArr.push_back(tempData);
+                    }
+                }
+                currDataBlock = dBlock.nextDataBlock;
+
+                //if exist next datablock add that to the list
+                if(currDataBlock != -1){
+                    dataBlockNum.push_back(currDataBlock);
+                }
+
+            }while(currDataBlock != -1);
+
+            //update the superBlock entry
+            superblock s_block = superblock();
+            int32_t read_super_block = readBlock(this->fd, SUPERBLOCK_NUM, &s_block);
+            if(read_super_block < SUCCESS_READDISK){
+                return read_super_block;
+            }
+            s_block.sb_totalct--;   //reduce the total number of files in the system
+            int temp_totl_files = s_block.sb_totalct;
+            //write the super block to the disk
+            int32_t write_super_block = writeBlock(this->fd, SUPERBLOCK_NUM, &s_block);
+            if(write_super_block < SUCCESS_WRITEDISK){
+                return write_super_block;
+            }
+            
+            //update the bitMap block - by removing all the data block from the table
+            for(int i = 0; i < dataBlockNum.size(); i++){
+                int updateCode = updateBitMap(dataBlockNum[i], 0);
+            }
+
+            //rewrite the data block and change the number of blockes if needed
+            currDataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
+            float numBlocksRequired = ((float)temp_totl_files / (float)(19));
+            int ceilNumBlocks = (int)std::ceil(numBlocksRequired);
+
+            if(ceilNumBlocks == 1){ //only main root block is required
+                dataBlock tempData = dataBlock();
+                for(int i = 0; i < 247; i += 13){
+                    memcpy(&tempData.directDataBlock[i], dataEntryArr[0].data(), dataEntryArr[0].size() * sizeof(char));
+                    dataEntryArr.erase(dataEntryArr.begin());
+                }
+
+                //write this block to root_node_data block
+                int rootDataBlockWrite = writeBlock(this->fd, currDataBlock, &tempData);
+                if(rootDataBlockWrite < SUCCESS_WRITEDISK){
+                    return rootDataBlockWrite;
+                }
+            }
+            else{
+                //more main root blocks required
+                for(int i = 0; i < ceilNumBlocks; i++){
+                    int32_t nextDataBlock = -1;
+                    if(i != ceilNumBlocks - 1){
+                        int32_t nextDataBlock = getNextAvailableInode();
+                    }
+
+                    dataBlock tempDBlock = dataBlock();
+                    for(int j = 0; j < 247; j += 13){
+                        memcpy(&tempDBlock.directDataBlock[j], dataEntryArr[0].data(), dataEntryArr[0].size() * sizeof(char));
+                        dataEntryArr.erase(dataEntryArr.begin());
+                    }
+                    tempDBlock.nextDataBlock = nextDataBlock;
+                    //write the current block to currOffset location
+                    int rootDataBlockWrite = writeBlock(this->fd, currDataBlock, &tempDBlock);
+                    if(rootDataBlockWrite < SUCCESS_WRITEDISK){
+                        return rootDataBlockWrite;
+                    }
+                    //update the curreDataBlock to next block
+                    currDataBlock = nextDataBlock;
+                }
+            }
+            //update the root Inode entry - Ndatablocks
+            inode i_block = inode();
+            int32_t read_root_inode_block = readBlock(this->fd, ROOT_INODE_NUM, &i_block);
+            if(read_root_inode_block < SUCCESS_READDISK){
+                return read_root_inode_block;
+            }
+
+            i_block.N_dataBlocks = ceilNumBlocks;
+            //write the inode block to the disk
+            int32_t write_inode_block = writeBlock(this->fd, ROOT_INODE_NUM, &i_block);
+            if(write_inode_block < SUCCESS_WRITEDISK){
+                return write_inode_block;
+            }
+        }
+
 
         //close the open FD and adds it to the free list
         void closeOpenFD(fileDescriptor key){
