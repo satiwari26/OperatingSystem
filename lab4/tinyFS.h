@@ -502,14 +502,14 @@ class tfs
             }
             //update the root Inode entry - Ndatablocks
             inode i_block = inode();
-            int32_t read_root_inode_block = readBlock(this->fd, ROOT_INODE_NUM, &i_block);
+            int32_t read_root_inode_block = readBlock(this->fd, ROOT_NODE_BLOCK_NUM, &i_block);
             if(read_root_inode_block < SUCCESS_READDISK){
                 return read_root_inode_block;
             }
 
             i_block.N_dataBlocks = ceilNumBlocks;
             //write the inode block to the disk
-            int32_t write_inode_block = writeBlock(this->fd, ROOT_INODE_NUM, &i_block);
+            int32_t write_inode_block = writeBlock(this->fd, ROOT_NODE_BLOCK_NUM, &i_block);
             if(write_inode_block < SUCCESS_WRITEDISK){
                 return write_inode_block;
             }
