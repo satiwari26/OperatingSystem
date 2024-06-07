@@ -419,9 +419,9 @@ class tfs
         */
         int deleteRootDataEntry(inode nodeVal){
             int currDataBlock = ROOT_NODE_FIRST_DATA_BLOCK;
-            vector<std::array<char, DATABLOCK_ENTRY_SIZE>> dataEntryArr;  //for temporary storing the data of each entry in this block
+            std::vector<std::array<char, DATABLOCK_ENTRY_SIZE>> dataEntryArr;  //for temporary storing the data of each entry in this block
 
-            vector<int32_t> dataBlockNum;   //to store the data block Number, except for the firstDataBlock
+            std::vector<int32_t> dataBlockNum;   //to store the data block Number, except for the firstDataBlock
 
             //find the inode-filename entry in the inode datablock and delete it
             dataBlock dBlock = dataBlock();
@@ -472,8 +472,13 @@ class tfs
             }
             
             //update the bitMap block - by removing all the data block from the table
-            for(int i = 0; i < dataBlockNum.size(); i++){
+            for(int i = 0; i < (int) dataBlockNum.size(); i++){
                 int updateCode = updateBitMap(dataBlockNum[i], 0);
+
+                if (updateCode < SUCCESS_WRITEDISK)
+                {
+                    return updateCode;
+                }
             }
 
             //rewrite the data block and change the number of blockes if needed
@@ -499,7 +504,7 @@ class tfs
                 for(int i = 0; i < ceilNumBlocks; i++){
                     int32_t nextDataBlock = -1;
                     if(i != ceilNumBlocks - 1){
-                        int32_t nextDataBlock = getNextAvailableInode();
+                        nextDataBlock = getNextAvailableInode();
                     }
 
                     dataBlock tempDBlock = dataBlock();
