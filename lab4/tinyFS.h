@@ -122,9 +122,9 @@ typedef struct inode
     }
 
     /* Constructor */
-    inode(int inode_num, int file_size){
+    inode(int inode_num){
         this->first_dataBlock = -1;
-        this->f_size = (int32_t) file_size;
+        this->f_size = 0;
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
 
@@ -216,10 +216,9 @@ class tfs
         int totalNumBlocksOnDisk;
         fileDescriptor fd = -1; /* Global file descriptor for current disk */
         fileDescriptor virtualFD = 2; /*virtual FD for to keep track of the open virtual files*/
-        std::vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
-        std::unordered_map<fileDescriptor , inode> openFileStruct; /* A mapping between the inodes and fileDescriptor maintained by tfs_open() and tfs_close()*/
-        bitMap bit_map; //keeps track of the bitmap struct
-
+        vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
+        std::unordered_map<fileDescriptor , inode> openFileStruct; /* A mapping between the inodes and virtual fileDescriptor maintained by tfs_open() and tfs_close()*/
+        bitMap bit_map; //keeps track of the bitmap struct 
         // Constructor
         tfs() :sb(superblock()), virtualFD(2) {}    /*initial virtual FD to 2*/
 
@@ -268,6 +267,15 @@ class tfs
                 return tempFD;
             }
         }
+
+        /**
+         * @brief
+         * writes Inode content to the specified block
+        */
+       int writeInodeBlock(inode node, int blockNumber){
+            
+       }
+
         //close the open FD and adds it to the free list
         void closeOpenFD(fileDescriptor key){
             this->freeFileDescriptors.push_back(key);

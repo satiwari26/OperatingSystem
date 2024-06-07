@@ -133,7 +133,20 @@ fileDescriptor tfs_open(char *name){
     if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
     {
         //find the inode and corresponding FD for this file
-        
+        int tempInodeNumber = tinyFS->getNextAvailableInode();
+        fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
+
+        //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
+        inode tempNode = inode(tempInodeNumber);
+        int updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
+        if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
+            return updateBitMapReturnValue;
+        }
+        tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
+
+
+
+
 
         /*we need to chage the inode next data block from pointer to offset number*/
 
