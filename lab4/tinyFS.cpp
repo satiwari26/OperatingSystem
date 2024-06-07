@@ -232,6 +232,9 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
         if (blockOffset < DATABLOCK_MAXSIZE_BYTES) 
         {
             memcpy(buffer, &dataBlockTemp.directDataBlock[blockOffset], 1);
+            inodeToRead.f_offset+=1;
+            tinyFS->writeInodeBlock(inodeToRead, inodeToRead.f_inode);
+        
             return SUCCESS_TFS_READBYTE;
         }
         else
@@ -247,5 +250,23 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 
 int tfs_seek(fileDescriptor FD, int offset)
 {
-    
+    if (tinyFS != NULL && tinyFS->fd != -1)
+    {
+        inode inodeToSeek; /* The inode to read a byte of data from */
+
+        int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToSeek);
+        if (inode_read_result != SUCCESS_READDISK)
+        {
+            return inode_read_result; // Throw error returned from disk read
+        }
+
+        // Change the offset, in bytes
+        inodeToSeek.f_offset = (int32_t) offset;
+        
+        tinyFS->writeInodeBlock(inodeToSeek, inodeToSeek.f_inode);
+    }
+    else
+    {
+        return ERROR_TFS_SEEK;
+    }
 }

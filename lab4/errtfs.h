@@ -16,6 +16,9 @@
 #ifndef ERROR_TFS_READBYTE
 #define ERROR_TFS_READBYTE -4000 /* Failed to read a byte from a file in the file system */
 #endif
+#ifndef ERROR_TFS_SEEK
+#define ERROR_TFS_SEEK -5000 /* Failed to read a byte from a file in the file system */
+#endif
 
 /** ERROR CODES BEGIN **/
 /* Open disk-related errors*/
