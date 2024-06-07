@@ -165,7 +165,7 @@ fileDescriptor tfs_open(char *name)
                     return filePair.second.f_inode;
                 }
             }
-            
+
             int fileReadResult = readBlock(tinyFS->fd, fileInodeNum, (void*) &fileInode);
             if (fileReadResult < SUCCESS_READDISK)
             {
@@ -189,8 +189,14 @@ fileDescriptor tfs_open(char *name)
 
 int32_t tfs_close(fileDescriptor FD)
 {
-    tinyFS->openFileStruct.erase(FD);
+    if(tinyFS->openFileStruct.erase(FD) == 0)
+    {
+        return ERROR_TFS_CLOSE;
+    }
+
     tinyFS->freeFileDescriptors.push_back(FD);
+
+    return SUCCESS_TFS_CLOSE;
 }
 
 int32_t tfs_readByte(fileDescriptor FD, char *buffer)

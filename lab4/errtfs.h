@@ -11,16 +11,19 @@
 #define ERROR_TFS_UNMOUNT -1002 /* Failed to unmount a file system */
 #endif
 #ifndef ERROR_TFS_OPEN
-#define ERROR_TFS_OPEN -3000 /* Failed to open a file in the file system */
+#define ERROR_TFS_OPEN -1003 /* Failed to open a file in the file system */
+#endif
+#ifndef ERROR_TFS_CLOSE
+#define ERROR_TFS_CLOSE -1004 /* Failed to close a file in the file system */
 #endif
 #ifndef ERROR_TFS_READBYTE
-#define ERROR_TFS_READBYTE -4000 /* Failed to read a byte from a file in the file system */
+#define ERROR_TFS_READBYTE -1005 /* Failed to read a byte from a file in the file system */
 #endif
 #ifndef ERROR_TFS_SEEK
-#define ERROR_TFS_SEEK -5000 /* Failed to read a byte from a file in the file system */
+#define ERROR_TFS_SEEK -1006 /* Failed to seek a file in the file system */
 #endif
 #ifndef ERROR_TFS_CREATEFILE
-#define ERROR_TFS_CREATEFILE -6000 /* Failed to read a byte from a file in the file system */
+#define ERROR_TFS_CREATEFILE -1007 /* Failed to create a file in the file system */
 #endif
 
 /** ERROR CODES BEGIN **/
