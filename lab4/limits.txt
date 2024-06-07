@@ -1,0 +1,6 @@
+Write here about limits and stuff for the video
+
+Limits:
+    - bitmap is stored in the superblock. since superblock is limited to 256 bytes, that means that we have limited amount of bits to represent blocks, so we are limiting
+    our amount of allocatable blocks because of the size of the bitmap (256 * 8 bits, each bit represents a free/unfree block)
+    
