@@ -175,3 +175,73 @@ fileDescriptor tfs_open(char *name){
 
     return 0;
 }
+
+int32_t tfs_readByte(fileDescriptor FD, char *buffer)
+{
+    if (tinyFS != NULL && tinyFS->fd != -1)
+    {
+        inode inodeToRead; /* The inode to read a byte of data from */
+
+        int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToRead);
+        if (inode_read_result != SUCCESS_READDISK)
+        {
+            return inode_read_result; // Throw error returned from disk read
+        }
+
+        // Find the corresponding data block through its index and the offset, to the byte, within that data block
+        // 247 bytes refers to the 19 pairs of 13-byte name-inode entries that can be held per data block
+        int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
+        int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
+        dataBlock dataBlockTemp;
+
+        if (blockIndex == 0)
+        {
+            int data_read_result = readBlock(tinyFS->fd, inodeToRead.first_dataBlock, (void*) &dataBlockTemp);
+            if (data_read_result != SUCCESS_READDISK)
+            {
+                return data_read_result; // Throw error returned from disk read
+            }
+        }
+        else
+        {
+            // If another data block exists...
+            // we need to iterate through the datablocks to get to the correct one, indicated by blockIndex
+            for (int32_t i = 0; i < blockIndex; i++)
+            {
+                if (dataBlockTemp.nextDataBlock != -1)
+                {
+                    dataBlock nextDataBlockTemp;
+                    
+                    int data_read_result = readBlock(tinyFS->fd, dataBlockTemp.nextDataBlock, (void*) &nextDataBlockTemp);
+                    if (data_read_result != SUCCESS_READDISK)
+                    {
+                        return data_read_result; // Throw error returned from disk read
+                    }
+                    
+                    dataBlockTemp = nextDataBlockTemp; 
+                }
+            }
+        }
+
+        // Ensure that the block offset begins at least 13 bytes before the last entry in the data block.
+        // Additonally, the block offset must be perfectly divisible by the 13-byte size for a name-inode pair (this should be a given, but safe check in case math is wrong)
+        if (blockOffset < (DATABLOCK_MAXSIZE_BYTES - DATABLOCK_ENTRY_SIZE) && blockOffset % DATABLOCK_ENTRY_SIZE == 0)  // TODO: change this to a macro
+        {
+            memcpy(buffer, &dataBlockTemp.directDataBlock[blockOffset], DATABLOCK_ENTRY_SIZE);
+            return SUCCESS_TFS_READBYTE;
+        }
+        else
+        {
+            return ERROR_TFS_READBYTE;
+        }
+    }
+    else
+    {
+        return ERROR_TFS_READBYTE;
+    }
+}
+
+int tfs_seek(fileDescriptor FD, int offset)
+{
+    
+}
