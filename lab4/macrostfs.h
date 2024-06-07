@@ -53,7 +53,9 @@
 #ifndef SUCCESS_TFS_READBYTE
 #define SUCCESS_TFS_READBYTE 0 /* Successfully read a byte of data from a file system */
 #endif
-
+#ifndef SUCCESS_TFS_SEEK
+#define SUCCESS_TFS_SEEK 0 /* Successfully seek to an offset in a file, on a file system */
+#endif
 
 /*********************************************************
  *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS. *

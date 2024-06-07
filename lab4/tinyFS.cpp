@@ -122,125 +122,122 @@ int32_t tfs_unmount(void)
     return ERROR_TFS_UNMOUNT;
 }
 
-fileDescriptor tfs_open(char *name){
-    
-    
-        // //check if the root inode exist
-        // if(tinyFS->fd < 0){
-        //     return ERROR_TFS_OPEN;
-        // }
-        // int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
-        // if (read_result != SUCCESS_READDISK)
-        // {
-        //     delete(tinyFS);
-        //     return read_result;
-        // }
+fileDescriptor tfs_open(char *name)
+{    
+    // Check if the root inode exist
+    if(tinyFS->fd < 0){
+        return ERROR_TFS_OPEN;
+    }
+    int32_t read_result = readBlock(tinyFS->fd, 0, (void*) tinyFS->getSuperblock());
+    if (read_result != SUCCESS_READDISK)
+    {
+        delete(tinyFS);
+        return read_result;
+    }
 
-        // // Check that the superblock is mounted or not
-        // if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
-        // {
-        //     //find the inode and corresponding FD for this file
-        //     int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
-        //     fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
+    // Check that the superblock is mounted or not
+    if (tinyFS->getSuperblock()->sb_magicnum == TFS_SB_MAGIC_NUM)
+    {
+        //find the inode and corresponding FD for this file
+        int32_t tempInodeNumber = tinyFS->getNextAvailableInode();
+        fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
 
-        //     //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
-        //     inode tempNode = inode(tempInodeNumber);
-        //     int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
-        //     if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
-        //         return updateBitMapReturnValue;
-        //     }
-        //     tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
-
+        //create a new InodeBlock add it the file, update the bitMap, add the FD to openFileStruct, create datablock, update the root node with name-inode value pair
+        inode tempNode = inode(tempInodeNumber);
+        int32_t updateBitMapReturnValue = tinyFS->updateBitMap(tempInodeNumber, 0);  //update the bitmap for the corresponding
+        if(updateBitMapReturnValue < SUCCESS_WRITEDISK){
+            return updateBitMapReturnValue;
+        }
+        tinyFS->setOpenFileStruct(tempVirtualFD, tempInodeNumber);  //update the openFileStruct
 
 
 
 
-        //     /*we need to chage the inode next data block from pointer to offset number*/
+
+        /*we need to chage the inode next data block from pointer to offset number*/
 
 
-        // }
-        // else 
-        // {
-        //     delete(tinyFS);
-        //     return ERROR_TFS_MOUNT;
-        // }
+    }
+    else 
+    {
+        delete(tinyFS);
+        return ERROR_TFS_MOUNT;
+    }
 
 
-        // //create root inode, write to disk
-        // inode rootInode;
+    //create root inode, write to disk
+    inode rootInode;
 
-        // //create dataBlock, write dataStruct to it, write to disk
+    //create dataBlock, write dataStruct to it, write to disk
 
-        // //update the openFileStruct
+    //update the openFileStruct
 
     return 0;
 }
 
 int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 {
-    if (tinyFS != NULL && tinyFS->fd != -1)
+    if (tinyFS == NULL || tinyFS->fd < 0)
     {
-        inode inodeToRead; /* The inode to read a byte of data from */
+        return ERROR_TFS_READBYTE;
+    }
 
-        int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToRead);
-        if (inode_read_result != SUCCESS_READDISK)
+    inode inodeToRead; /* The inode to read a byte of data from */
+
+    int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToRead);
+    if (inode_read_result != SUCCESS_READDISK)
+    {
+        return inode_read_result; // Throw error returned from disk read
+    }
+
+    // Find the corresponding data block through its index and the offset, to the byte, within that data block
+    // 247 bytes refers to the 19 pairs of 13-byte name-inode entries that can be held per data block
+    int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
+    int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
+    dataBlock dataBlockTemp;
+
+    if (inodeToRead.f_offset >= inodeToRead.N_dataBlocks * DATABLOCK_MAXSIZE_BYTES)
+    {
+        return ERROR_TFS_READBYTE;
+    }
+
+    if (blockIndex == 0)
+    {
+        int data_read_result = readBlock(tinyFS->fd, inodeToRead.first_dataBlock, (void*) &dataBlockTemp);
+        if (data_read_result != SUCCESS_READDISK)
         {
-            return inode_read_result; // Throw error returned from disk read
+            return data_read_result; // Throw error returned from disk read
         }
-
-        // Find the corresponding data block through its index and the offset, to the byte, within that data block
-        // 247 bytes refers to the 19 pairs of 13-byte name-inode entries that can be held per data block
-        int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
-        int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
-        dataBlock dataBlockTemp;
-
-        if (inodeToRead.f_offset >= inodeToRead.N_dataBlocks * DATABLOCK_MAXSIZE_BYTES)
+    }
+    else
+    {
+        // If another data block exists...
+        // we need to iterate through the datablocks to get to the correct one, indicated by blockIndex
+        for (int32_t i = 0; i < blockIndex; i++)
         {
-            return ERROR_TFS_READBYTE;
-        }
-
-        if (blockIndex == 0)
-        {
-            int data_read_result = readBlock(tinyFS->fd, inodeToRead.first_dataBlock, (void*) &dataBlockTemp);
-            if (data_read_result != SUCCESS_READDISK)
+            if (dataBlockTemp.nextDataBlock != -1)
             {
-                return data_read_result; // Throw error returned from disk read
-            }
-        }
-        else
-        {
-            // If another data block exists...
-            // we need to iterate through the datablocks to get to the correct one, indicated by blockIndex
-            for (int32_t i = 0; i < blockIndex; i++)
-            {
-                if (dataBlockTemp.nextDataBlock != -1)
+                dataBlock nextDataBlockTemp;
+                
+                int data_read_result = readBlock(tinyFS->fd, dataBlockTemp.nextDataBlock, (void*) &nextDataBlockTemp);
+                if (data_read_result != SUCCESS_READDISK)
                 {
-                    dataBlock nextDataBlockTemp;
-                    
-                    int data_read_result = readBlock(tinyFS->fd, dataBlockTemp.nextDataBlock, (void*) &nextDataBlockTemp);
-                    if (data_read_result != SUCCESS_READDISK)
-                    {
-                        return data_read_result; // Throw error returned from disk read
-                    }
-                    
-                    dataBlockTemp = nextDataBlockTemp; 
+                    return data_read_result; // Throw error returned from disk read
                 }
+                
+                dataBlockTemp = nextDataBlockTemp; 
             }
         }
+    }
 
-        // Ensure that the block offset begins at least 1 byte before the last entry in the data block.
-        if (blockOffset < DATABLOCK_MAXSIZE_BYTES) 
-        {
-            memcpy(buffer, &dataBlockTemp.directDataBlock[blockOffset], 1);
-            inodeToRead.f_offset+=1;
-            tinyFS->writeInodeBlock(inodeToRead, inodeToRead.f_inode);
-        
-            return SUCCESS_TFS_READBYTE;
-        }
-        else
-        {
-            return ERROR_TFS_READBYTE;
-        }
+    // Ensure that the block offset begins at least 1 byte before the last entry in the data block.
+    if (blockOffset < DATABLOCK_MAXSIZE_BYTES) 
+    {
+        memcpy(buffer, &dataBlockTemp.directDataBlock[blockOffset], 1);
+        inodeToRead.f_offset+=1;
+        tinyFS->writeInodeBlock(inodeToRead, inodeToRead.f_inode);
+    
+        return SUCCESS_TFS_READBYTE;
     }
     else
     {
@@ -250,23 +247,24 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 
 int tfs_seek(fileDescriptor FD, int offset)
 {
-    if (tinyFS != NULL && tinyFS->fd != -1)
-    {
-        inode inodeToSeek; /* The inode to read a byte of data from */
-
-        int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToSeek);
-        if (inode_read_result != SUCCESS_READDISK)
-        {
-            return inode_read_result; // Throw error returned from disk read
-        }
-
-        // Change the offset, in bytes
-        inodeToSeek.f_offset = (int32_t) offset;
-        
-        tinyFS->writeInodeBlock(inodeToSeek, inodeToSeek.f_inode);
-    }
-    else
+    if (tinyFS == NULL || tinyFS->fd < 0)
     {
         return ERROR_TFS_SEEK;
     }
+
+    inode inodeToSeek; /* The inode to read a byte of data from */
+
+    int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToSeek);
+    if (inode_read_result != SUCCESS_READDISK)
+    {
+        return inode_read_result; // Throw error returned from disk read
+    }
+
+    // Change the offset, in bytes
+    inodeToSeek.f_offset = (int32_t) offset;
+
+    tinyFS->writeInodeBlock(inodeToSeek, inodeToSeek.f_inode);
+
+    return SUCCESS_TFS_SEEK;
 }
+
