@@ -34,7 +34,6 @@ typedef struct dataBlock {
         for(int32_t i = 0; i < 5; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
-        std::cout << "size datablock:" << sizeof(dataBlock) << std::endl;
     }
 
 
@@ -67,7 +66,6 @@ typedef struct inode
         for(int32_t i = 0; i < 236; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
-        std::cout << "size inode:" << sizeof(inode) << std::endl;
     }
 
     /* Constructor */
@@ -716,7 +714,7 @@ int32_t tfs_rename(fileDescriptor FD, char* name);
 /**
  * Lists all the files and directories on the disk.
 */
-void tfs_readdir(void*);
+void tfs_readdir();
 
 
 /****************** TIMESTAMPS *******************/

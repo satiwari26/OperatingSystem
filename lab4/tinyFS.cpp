@@ -246,21 +246,20 @@ int tfs_write(fileDescriptor FD, char *buffer, int size){
             }
 
             //write the value to current temp Datablock
-            memcpy(&newDataBlock.directDataBlock[0], &buffer[i * lastSizeBlock], lastSizeBlock);
+            memcpy(&newDataBlock.directDataBlock, &buffer[i * DATABLOCK_MAXSIZE_BYTES], lastSizeBlock);
 
             int32_t tempCurrBlock = -1;
 
-            //update the nextBlock offset Value
-            if(i == (numBlocksNeeded - 1)){
-                tempCurrBlock = -1;
-            }
-            else{
-                tempCurrBlock = tinyFS->getNextAvailableInode();
+            // update the next block offset value
+            if (i != (numBlocksNeeded - 1)) {
+            tinyFS->updateBitMap(currBlock, 1);
+            tempCurrBlock = tinyFS->getNextAvailableInode();
             }
 
             newDataBlock.nextDataBlock = tempCurrBlock;
 
             int writeDataBlock = tinyFS->writeDataBlock(newDataBlock, currBlock);
+            
             if(writeDataBlock < SUCCESS_WRITEDISK){
                 return writeDataBlock;
             }
@@ -278,6 +277,7 @@ int tfs_write(fileDescriptor FD, char *buffer, int size){
     {
         return writeInodeResult;
     }
+    tinyFS->updateBitMap(writeFileInode.f_inode, 1);
 }
 
 int32_t tfs_close(fileDescriptor FD)
@@ -449,13 +449,31 @@ int32_t tfs_rename(fileDescriptor FD, char* name)
     return ERROR_TFS_RENAMEFILE;
 }
 
-void tfs_readdir(void*)
+void tfs_readdir()
 {
     // Grab the root node first data block 
     dataBlock rootNodeData;
     int32_t rootReadResult = readBlock(tinyFS->fd, ROOT_NODE_FIRST_DATA_BLOCK, &rootNodeData);
     if(rootReadResult < SUCCESS_READDISK) {
         return;
+    }
+    
+    // Start listing entries from the root dir
+    cout << "ROOT DIR" << endl;
+    for (int curPairOffset = 0; curPairOffset < DATABLOCK_MAXSIZE_BYTES; curPairOffset+=DATABLOCK_ENTRY_SIZE)
+    {
+        char curPairFileName[DATABLOCK_FILENAME_SIZE] = { '\0' }; // Initialized to all null terminator
+        // If the file is equal, then we need to retrieve the corresponding inode number and check if that block
+        // has been allocated on the bitmap (to ensure that it is a stable entry)
+        int32_t curPairInodeNum = -1;
+
+        memcpy(curPairFileName, &rootNodeData.directDataBlock[curPairOffset], DATABLOCK_FILENAME_SIZE);
+        memcpy(&curPairInodeNum, &rootNodeData.directDataBlock[curPairOffset] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
+
+        if (tinyFS->bit_map.bitmap[curPairInodeNum] == BLOCK_ALLOCATED)
+        {
+            cout << "- " << curPairFileName << endl; 
+        }
     }
 
     // Search all name-value pairs for the file name
