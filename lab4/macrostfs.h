@@ -65,6 +65,9 @@
 #ifndef SUCCESS_TFS_CREATEFILE
 #define SUCCESS_TFS_CREATEFILE 0 /* Successfully created a new file, on a file system */
 #endif
+#ifndef SUCCESS_TFS_RENAMEFILE
+#define SUCCESS_TFS_RENAMEFILE 0 /* Successfully renamed a new file, on a file system */
+#endif
 
 /*********************************************************
  *      TEST VARIABLES/MACROS FOR TFS. WORK IN PROGRESS. *

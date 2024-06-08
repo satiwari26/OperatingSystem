@@ -31,6 +31,12 @@
 #ifndef ERROR_TFS_CREATEFILE
 #define ERROR_TFS_CREATEFILE -1009 /* Failed to create a file in the file system */
 #endif
+#ifndef ERROR_TFS_RENAMEFILE
+#define ERROR_TFS_RENAMEFILE -1010 /* Failed to rename a file in the file system */
+#endif
+#ifndef ERROR_TFS_STAT
+#define ERROR_TFS_STAT -1011 /* Failed to stat a file in the file system */
+#endif
 
 /** ERROR CODES BEGIN **/
 /* Open disk-related errors*/
