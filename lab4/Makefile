@@ -10,7 +10,7 @@ LAB4_HDRS = libDisk.h tinyFS.h
 # Object files
 LAB4_OBJS = $(LAB4_SRCS:.cpp=.o)
 
-all: tinyFS
+all: test
 
 tinyFS: $(LAB4_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LAB4_OBJS)
@@ -22,8 +22,8 @@ test: $(LAB4_OBJS)
 %.o: %.cpp $(LAB4_HDRS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
-	rm -f tinyFS $(LAB4_OBJS)
+# clean:
+# 	rm -f tinyFS $(LAB4_OBJS)
 
-clean-test:
+clean:
 	rm -f test tinyFS $(LAB4_OBJS)
