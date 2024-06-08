@@ -19,6 +19,9 @@ int main(int argc, char* argv[])
     int mount_result = tfs_mount((char*) diskFileName);
     cout << "mount result is " << mount_result << endl;
 
+    int open_result = tfs_open((char*) "file2");
+    cout << "open result is " << open_result << endl;
+
     int unmount_result = tfs_unmount();
     cout << "unmount result is " << unmount_result << endl;
 

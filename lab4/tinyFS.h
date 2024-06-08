@@ -545,12 +545,12 @@ class tfs
          * Closes the open FD and adds it to the free list
         */
         int32_t closeOpenFD(fileDescriptor key) {
-            if(tinyFS->openFileStruct.erase(key) == 0)
+            if(this->openFileStruct.erase(key) == 0)
             {
                 return ERROR_TFS_CLOSE;
             }
 
-            tinyFS->freeFileDescriptors.push_back(key);
+            this->freeFileDescriptors.push_back(key);
 
             return SUCCESS_TFS_CLOSE;
         }

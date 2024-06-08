@@ -144,7 +144,7 @@ fileDescriptor tfs_open(char *name)
         // TODO: Can prob modify filExists to directly return an inode instead of inode num
         int fileInodeNum = tinyFS->fileExists(name);
         inode fileInode;
-
+        cout << "file inode num is " << fileInodeNum << endl;
         // File does not exist, create a new one
         if (fileInodeNum == -1)
         {
@@ -157,6 +157,7 @@ fileDescriptor tfs_open(char *name)
         // File does exist, pull its inode data from the disk
         else
         {
+            cout << "in here" << endl;
             // if file is already open, return that file descriptor
             for (auto& filePair : tinyFS->openFileStruct)
             {
