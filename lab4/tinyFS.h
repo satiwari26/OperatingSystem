@@ -418,36 +418,6 @@ class tfs
 
         /**
          * @brief
-         * deletes the files datablock and updates the inode of that file
-         */
-        int32_t deleteDataBlock(inode tempInode) {
-            //update the bitmap table by removing the data block for corresponding Inode
-            int32_t nextBlockNum = tempInode.first_dataBlock;
-            for(int32_t i=0; i<tempInode.N_dataBlocks; i++){
-                //update the bit map for next data block num
-                updateBitMap(nextBlockNum, 0);
-
-                dataBlock tempDataBlock = dataBlock();
-                int32_t bitsRead = readBlock(this->fd, nextBlockNum, (void*) &tempDataBlock);
-                if(bitsRead < SUCCESS_READDISK){
-                    return bitsRead;
-                }
-                nextBlockNum = tempDataBlock.nextDataBlock;
-            }
-
-            //update the inode table itself
-            tempInode.N_dataBlocks = 0;
-            tempInode.first_dataBlock = -1;
-            int32_t bitsUpdate = writeBlock(this->fd, tempInode.f_inode, &tempInode);
-            if(bitsUpdate < SUCCESS_WRITEDISK){
-                return bitsUpdate;
-            }
-
-            return SUCCESS_WRITEDISK;
-        }
-
-        /**
-         * @brief
          * delete entry from the Root Inode
         */
         int deleteRootDataEntry(inode nodeVal){
