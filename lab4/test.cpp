@@ -29,6 +29,10 @@ int main(int argc, char* argv[])
 
     tfs_readdir();
 
+    int rename_res = tfs_rename(open_result, (char*)"file5");
+
+    tfs_readdir();
+    
     int write_result = tfs_write(open_result, (char*)"cooked", 7);
     cout << "write result is " << write_result << endl;
 

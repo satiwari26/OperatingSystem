@@ -413,6 +413,25 @@ int32_t tfs_rename(fileDescriptor FD, char* name)
         return rootReadResult;
     }
 
+    for (int curPairOffset = 0; curPairOffset < DATABLOCK_MAXSIZE_BYTES; curPairOffset+=DATABLOCK_ENTRY_SIZE)
+    {
+        char curPairFileName[DATABLOCK_FILENAME_SIZE] = { '\0' }; // Initialized to all null terminator
+        // If the file is equal, then we need to retrieve the corresponding inode number and check if that block
+        // has been allocated on the bitmap (to ensure that it is a stable entry)
+        int32_t curPairInodeNum = -1;
+
+        memcpy(curPairFileName, &rootNodeData.directDataBlock[curPairOffset], DATABLOCK_FILENAME_SIZE);
+        memcpy(&curPairInodeNum, &rootNodeData.directDataBlock[curPairOffset] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
+
+        if (tinyFS->openFileStruct[FD].f_inode == curPairInodeNum)
+        {
+            // File exists, so rename it
+            memcpy(&rootNodeData.directDataBlock[curPairOffset], name, DATABLOCK_FILENAME_SIZE);
+            tinyFS->writeDataBlock(rootNodeData, curBlockNum);
+            return SUCCESS_TFS_RENAMEFILE;
+        }
+    }
+
     // Search all name-value pairs for the file name
     while (rootNodeData.nextDataBlock != -1)
     {
