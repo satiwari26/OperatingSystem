@@ -3,9 +3,9 @@ CFLAGS = -g -Wall -std=c++11
 LDFLAGS =
 
 # Source files
-LAB4_SRCS = tinyFS.cpp libDisk.cpp
+LAB4_SRCS = libTinyFS.cpp libDisk.cpp
 # Header files
-LAB4_HDRS = libDisk.h tinyFS.h
+LAB4_HDRS = libDisk.h libTinyFS.h errtfs.h macrostfs.h
 
 # Object files
 LAB4_OBJS = $(LAB4_SRCS:.cpp=.o)
@@ -16,7 +16,7 @@ tinyFS: $(LAB4_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LAB4_OBJS)
 
 test: $(LAB4_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(LAB4_OBJS) test.cpp
+	$(CC) $(CFLAGS) $(LDFLAGS) -o tinyFsDemo $(LAB4_OBJS) tinyFsDemo.cpp
 
 # Compilation rule for cpp files
 %.o: %.cpp $(LAB4_HDRS)
@@ -26,4 +26,4 @@ test: $(LAB4_OBJS)
 # 	rm -f tinyFS $(LAB4_OBJS)
 
 clean:
-	rm -f test tinyFS $(LAB4_OBJS)
+	rm -f tinyFsDemo tinyFS $(LAB4_OBJS)

@@ -1,4 +1,4 @@
-#include "tinyFS.h"
+#include "libTinyFS.h"
 
 using namespace std;
 
@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
     int rename_res = tfs_rename(open_result, (char*)"file5");
 
     tfs_readdir();
-    
+
     int write_result = tfs_write(open_result, (char*)"cooked", 7);
     cout << "write result is " << write_result << endl;
 
@@ -73,6 +73,9 @@ int main(int argc, char* argv[])
         }
         cout << "buffer " << buffer << endl;
     }
+    
+    inode stat = tfs_stat(open_result);
+    cout << stat.creationTime << endl;
     
     int delete_result = tfs_delete(open_result);
     cout << "delete result is " << delete_result << endl;

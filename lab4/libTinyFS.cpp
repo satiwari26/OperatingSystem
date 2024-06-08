@@ -1,4 +1,4 @@
-#include "tinyFS.h"
+#include "libTinyFS.h"
 
 using namespace std;
 
