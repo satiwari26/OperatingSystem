@@ -247,16 +247,18 @@ class tfs
             dataBlock rootNodeData;
             int32_t rootReadResult = readBlock(this->fd, ROOT_NODE_FIRST_DATA_BLOCK, &rootNodeData);
             if(rootReadResult < SUCCESS_READDISK) {
+                std::cout << "error in root read result" << std::endl;
                 return rootReadResult;
             }
 
             // Search all name-value pairs for the file name
-            while (rootNodeData.nextDataBlock != -1)
+            while (rootNodeData.nextDataBlock <= 0)
             {
                 // Read the next data block, for use in the NEXT iteration of this while loop
                 dataBlock nextRootNodeData;
                 int32_t nextRootReadResult = readBlock(this->fd, rootNodeData.nextDataBlock, &nextRootNodeData);
                 if(nextRootReadResult < SUCCESS_READDISK) {
+                    std::cout << "error in next read result" << std::endl;
                     return nextRootReadResult;
                 }
 
@@ -351,7 +353,7 @@ class tfs
             int32_t currentBlockOffset = ROOT_NODE_FIRST_DATA_BLOCK;
 
             //get to the next data block
-            while(blockData.nextDataBlock != -1){
+            while(blockData.nextDataBlock <= 0){
                 currentBlockOffset = blockData.nextDataBlock;
                 int32_t readNextDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
                 if(readNextDataTest < SUCCESS_READDISK){
@@ -454,11 +456,11 @@ class tfs
                 currDataBlock = dBlock.nextDataBlock;
 
                 //if exist next datablock add that to the list
-                if(currDataBlock != -1){
+                if(currDataBlock <= 0){
                     dataBlockNum.push_back(currDataBlock);
                 }
 
-            }while(currDataBlock != -1);
+            }while(currDataBlock <= 0);
 
             //update the superBlock entry
             superblock s_block = superblock();

@@ -334,7 +334,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
         // we need to iterate through the datablocks to get to the correct one, indicated by blockIndex
         for (int32_t i = 0; i < blockIndex; i++)
         {
-            if (dataBlockTemp.nextDataBlock != -1)
+            if (dataBlockTemp.nextDataBlock <= 0)
             {
                 dataBlock nextDataBlockTemp;
                 
@@ -406,7 +406,7 @@ int32_t tfs_rename(fileDescriptor FD, char* name)
     }
 
     // Search all name-value pairs for the file name
-    while (rootNodeData.nextDataBlock != -1)
+    while (rootNodeData.nextDataBlock <= 0)
     {
         // Read the next data block, for use in the NEXT iteration of this while loop
         dataBlock nextRootNodeData;
@@ -451,7 +451,7 @@ void tfs_readdir(void*)
     }
 
     // Search all name-value pairs for the file name
-    while (rootNodeData.nextDataBlock != -1)
+    while (rootNodeData.nextDataBlock <= 0)
     {
         // Read the next data block, for use in the NEXT iteration of this while loop
         dataBlock nextRootNodeData;
