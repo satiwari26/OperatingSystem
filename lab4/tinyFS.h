@@ -551,7 +551,7 @@ class tfs
             }
 
             this->freeFileDescriptors.push_back(key);
-
+            
             return SUCCESS_TFS_CLOSE;
         }
 
