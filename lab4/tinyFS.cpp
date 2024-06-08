@@ -187,6 +187,90 @@ fileDescriptor tfs_open(char *name)
     return 0;
 }
 
+int tfs_write(fileDescriptor FD, char *buffer, int size){
+    if(tinyFS == NULL || tinyFS->fd < 0){
+        return ERROR_TFS_WRITE;
+    }
+    //check if the FD is open
+    if(tinyFS->openFileStruct.find(FD) != tinyFS->openFileStruct.end()){
+        return ERROR_TFS_OPEN;
+    }
+
+    //if it is open - find the corresponding inode to it and offset to the right block
+    inode writeFileInode = tinyFS->openFileStruct[FD];
+
+    //delete the prev dataBlock associated with this inode
+    int delDataBlock = tinyFS->deleteDataBlock(writeFileInode);
+    if(delDataBlock < SUCCESS_WRITEDISK){
+        return delDataBlock;
+    }
+
+    int32_t firstDataBlock = writeFileInode.first_dataBlock;
+    //check if there is a data block associated with this file, if not create one
+    if(writeFileInode.first_dataBlock == -1){
+        firstDataBlock = tinyFS->getNextAvailableInode();
+        writeFileInode.first_dataBlock = firstDataBlock;
+    }
+
+    //check how many blocks would be needed to write this data with the existing data
+    int32_t numBlocksNeeded = (int)std::ceil((float) size / (float) DATABLOCK_MAXSIZE_BYTES);
+
+    int32_t currBlock = writeFileInode.first_dataBlock;
+
+    //if numblocksNeeded is only 1 - size would be less than or equal to 247 bytes
+    if(numBlocksNeeded == 1){
+        dataBlock dd_block = dataBlock();
+        for(int i = 0; i < size; i++){
+            memcpy(&dd_block.directDataBlock[i], &buffer[i], sizeof(char));
+        }
+
+        //write the data block to the file
+        int writeDataCheck = tinyFS->writeDataBlock(dd_block, currBlock);
+        if(writeDataCheck < SUCCESS_WRITEDISK){
+            return writeDataCheck;
+        }
+    }
+    //if more than 1 blocks needed
+    else{
+        //create new data block and find space for it
+        for(int i = 0; i < numBlocksNeeded; i++){
+            int lastSizeBlock = DATABLOCK_MAXSIZE_BYTES;
+            dataBlock newDataBlock = dataBlock();
+
+
+            //size of the last block
+            if(i == (numBlocksNeeded - 1)){
+                int emptySpace = (numBlocksNeeded * DATABLOCK_MAXSIZE_BYTES) - size;
+                lastSizeBlock = DATABLOCK_MAXSIZE_BYTES - emptySpace;
+            }
+
+            //write the value to current temp Datablock
+            memcpy(&newDataBlock.directDataBlock[0], &buffer[i * lastSizeBlock], lastSizeBlock);
+
+            int32_t tempCurrBlock = -1;
+
+            //update the nextBlock offset Value
+            if(i == (numBlocksNeeded - 1)){
+                tempCurrBlock = -1;
+            }
+            else{
+                tempCurrBlock = tinyFS->getNextAvailableInode();
+            }
+
+            newDataBlock.nextDataBlock = tempCurrBlock;
+
+            int writeDataBlock = tinyFS->writeDataBlock(newDataBlock, currBlock);
+            if(writeDataBlock < SUCCESS_WRITEDISK){
+                return writeDataBlock;
+            }
+
+            currBlock = tempCurrBlock;
+
+        }
+    }
+
+}
+
 int32_t tfs_close(fileDescriptor FD)
 {
     if (tinyFS->closeOpenFD(FD) < SUCCESS_TFS_CLOSE)
