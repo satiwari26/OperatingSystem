@@ -193,7 +193,7 @@ int tfs_write(fileDescriptor FD, char *buffer, int size){
         return ERROR_TFS_WRITE;
     }
     //check if the FD is open
-    if(tinyFS->openFileStruct.find(FD) != tinyFS->openFileStruct.end()){
+    if(tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end()){
         return ERROR_TFS_OPEN;
     }
 
@@ -270,6 +270,14 @@ int tfs_write(fileDescriptor FD, char *buffer, int size){
         }
     }
 
+    writeFileInode.N_dataBlocks = numBlocksNeeded;
+    writeFileInode.f_size = size;
+
+    int32_t writeInodeResult = tinyFS->writeInodeBlock(writeFileInode, writeFileInode.f_inode);
+    if (writeInodeResult < SUCCESS_WRITEDISK)
+    {
+        return writeInodeResult;
+    }
 }
 
 int32_t tfs_close(fileDescriptor FD)
@@ -311,7 +319,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 
     // Find the corresponding data block through its index and the offset, to the byte, within that data block
     // 247 bytes refers to the max number of entries that can be held per data block
-    int32_t blockIndex = ceil((float) inodeToRead.f_offset / (float) DATABLOCK_MAXSIZE_BYTES);
+    int32_t blockIndex = inodeToRead.f_offset / DATABLOCK_MAXSIZE_BYTES;
     int32_t blockOffset = inodeToRead.f_offset % DATABLOCK_MAXSIZE_BYTES;
     dataBlock dataBlockTemp;
 
@@ -334,7 +342,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
         // we need to iterate through the datablocks to get to the correct one, indicated by blockIndex
         for (int32_t i = 0; i < blockIndex; i++)
         {
-            if (dataBlockTemp.nextDataBlock <= 0)
+            if (dataBlockTemp.nextDataBlock != -1)
             {
                 dataBlock nextDataBlockTemp;
                 
@@ -406,7 +414,7 @@ int32_t tfs_rename(fileDescriptor FD, char* name)
     }
 
     // Search all name-value pairs for the file name
-    while (rootNodeData.nextDataBlock <= 0)
+    while (rootNodeData.nextDataBlock != -1)
     {
         // Read the next data block, for use in the NEXT iteration of this while loop
         dataBlock nextRootNodeData;
@@ -451,7 +459,7 @@ void tfs_readdir(void*)
     }
 
     // Search all name-value pairs for the file name
-    while (rootNodeData.nextDataBlock <= 0)
+    while (rootNodeData.nextDataBlock != -1)
     {
         // Read the next data block, for use in the NEXT iteration of this while loop
         dataBlock nextRootNodeData;

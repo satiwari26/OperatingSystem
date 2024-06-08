@@ -251,12 +251,17 @@ class tfs
                 return rootReadResult;
             }
 
+            if (rootNodeData.nextDataBlock == 0)
+                rootNodeData.nextDataBlock = -1;
+
             // Search all name-value pairs for the file name
-            while (rootNodeData.nextDataBlock <= 0)
+            while (rootNodeData.nextDataBlock != -1)
             {
                 // Read the next data block, for use in the NEXT iteration of this while loop
                 dataBlock nextRootNodeData;
                 int32_t nextRootReadResult = readBlock(this->fd, rootNodeData.nextDataBlock, &nextRootNodeData);
+                if (nextRootNodeData.nextDataBlock == 0)
+                    nextRootNodeData.nextDataBlock = -1;
                 if(nextRootReadResult < SUCCESS_READDISK) {
                     std::cout << "error in next read result" << std::endl;
                     return nextRootReadResult;
@@ -349,16 +354,21 @@ class tfs
             if(readDataTest < SUCCESS_READDISK){
                 return readDataTest;
             }
+            if (blockData.nextDataBlock == 0)
+                blockData.nextDataBlock = -1;
 
             int32_t currentBlockOffset = ROOT_NODE_FIRST_DATA_BLOCK;
-
+            
             //get to the next data block
-            while(blockData.nextDataBlock <= 0){
+            while(blockData.nextDataBlock != -1){
                 currentBlockOffset = blockData.nextDataBlock;
                 int32_t readNextDataTest = readBlock(this->fd, blockData.nextDataBlock, &blockData);
+                
                 if(readNextDataTest < SUCCESS_READDISK){
                     return readNextDataTest;
                 }
+                if (blockData.nextDataBlock == 0)
+                    blockData.nextDataBlock = -1;
             }
 
             char tempDataStorage[DATABLOCK_FILENAME_SIZE] = {'\0'};
@@ -381,6 +391,9 @@ class tfs
                 if(write_result < SUCCESS_WRITEDISK){
                     return write_result;
                 }
+                if (blockData.nextDataBlock == 0)
+                    blockData.nextDataBlock = -1;
+
                 currentBlockOffset = blockData.nextDataBlock;
 
                 //update the bitMap for new block allocation
@@ -435,6 +448,8 @@ class tfs
                 if(read_first_Root_dataBlock < SUCCESS_READDISK){
                     return read_first_Root_dataBlock;
                 }
+                if (dBlock.nextDataBlock == 0)
+                    dBlock.nextDataBlock = -1;
 
                 for(int i = 0; i < DATABLOCK_MAXSIZE_BYTES; i += DATABLOCK_ENTRY_SIZE){
                     int32_t currInodeVal;
@@ -456,11 +471,11 @@ class tfs
                 currDataBlock = dBlock.nextDataBlock;
 
                 //if exist next datablock add that to the list
-                if(currDataBlock <= 0){
+                if(currDataBlock != -1){
                     dataBlockNum.push_back(currDataBlock);
                 }
 
-            }while(currDataBlock <= 0);
+            }while(currDataBlock != -1);
 
             //update the superBlock entry
             superblock s_block = superblock();
@@ -595,6 +610,8 @@ class tfs
                 if(bitsRead < SUCCESS_READDISK){
                     return bitsRead;
                 }
+                if (tempDataBlock.nextDataBlock == 0)
+                    tempDataBlock.nextDataBlock = -1;
                 nextBlockNum = tempDataBlock.nextDataBlock;
             }
 
@@ -621,6 +638,8 @@ class tfs
                 if(bitsRead < SUCCESS_READDISK){
                     return bitsRead;
                 }
+                if (tempDataBlock.nextDataBlock == 0)
+                    tempDataBlock.nextDataBlock = -1;
                 nextBlockNum = tempDataBlock.nextDataBlock;
             }
 

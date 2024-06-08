@@ -22,6 +22,16 @@ int main(int argc, char* argv[])
     int open_result = tfs_open((char*) "file2");
     cout << "open result is " << open_result << endl;
 
+    int write_result = tfs_write(open_result, (char*)"cooked", 7);
+    cout << "write result is " << write_result << endl;
+
+    for (int i = 0; i < 7; i++)
+    {
+        char buffer= '\0';
+        int readbyte_result = tfs_readByte(open_result, &buffer);
+        cout << "read result is " << readbyte_result << " with buffer " << buffer << endl;
+    }
+    
     int unmount_result = tfs_unmount();
     cout << "unmount result is " << unmount_result << endl;
 
