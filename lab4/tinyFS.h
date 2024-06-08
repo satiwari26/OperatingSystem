@@ -173,7 +173,6 @@ typedef struct superblock
 class tfs 
 {
     private:
-        // std::unordered_map<std:: string, inode> rootNodeDataStruct; /* A mapping between open inodes in the file system and their associated file name */
         superblock sb; /* Superblock for the TinyFS file system */
 
     public:
@@ -182,6 +181,7 @@ class tfs
         std::vector<fileDescriptor> freeFileDescriptors; //keep track of the FD that are avaialible to use next
         std::unordered_map<fileDescriptor , inode> openFileStruct; /* A mapping between the inodes and virtual fileDescriptor maintained by tfs_open() and tfs_close()*/
         bitMap bit_map; //keeps track of the bitmap struct 
+
         // Constructor
         tfs() :sb(superblock()), virtualFD(2) {}    /*initial virtual FD to 2*/
 
@@ -214,6 +214,7 @@ class tfs
             }
             return tempInode;
         }
+
         /**
          * @brief
          * returns the next file descriptor
@@ -326,6 +327,7 @@ class tfs
             int32_t inode_Write_result = writeBlock((int) this->fd, blockNumber, (void*) &node);
             return inode_Write_result;
         }
+
         /**
          * @brief
          * write data to the data block
@@ -334,6 +336,7 @@ class tfs
             int32_t data_Write_result = writeBlock((int) this->fd, blockNumber, (void*) &db);
             return data_Write_result;
         }
+
         /**
          * @brief
          * creates instance entry for the RootDataBlock
@@ -537,22 +540,39 @@ class tfs
             }
         }
 
+        /**
+         * @brief
+         * Closes the open FD and adds it to the free list
+        */
+        int32_t closeOpenFD(fileDescriptor key) {
+            if(tinyFS->openFileStruct.erase(key) == 0)
+            {
+                return ERROR_TFS_CLOSE;
+            }
 
-        //close the open FD and adds it to the free list
-        void closeOpenFD(fileDescriptor key){
-            this->freeFileDescriptors.push_back(key);
-            this->openFileStruct.erase(key);
+            tinyFS->freeFileDescriptors.push_back(key);
+
+            return SUCCESS_TFS_CLOSE;
         }
-        //update the bitmap
-        int32_t updateBitMap(int32_t offset, int32_t value){
+
+        /**
+         * @brief 
+         * Update the bitmap
+        */
+        int32_t updateBitMap(int32_t offset, int32_t value) {
             this->bit_map.bitmap[offset] = value;
 
             //write the block to the disk
             int32_t bitsWrite = writeBlock(this->fd, BITMAP_BLOCK_NUM, (void *)&this->bit_map);
             return bitsWrite;
         }
-        //deleting the file and updating struct
-        int32_t deleteFileUpdate(fileDescriptor fd){
+
+        /**
+         * @brief
+         * Deletes the file and updating open file map. Also updates the bitmaps for the file and any associated datablocks.
+         * If the file is open, it is closed before deleting.
+        */
+        int32_t deleteFileUpdate(fileDescriptor fd) {
             //store tje inode temp
             inode tempInode = openFileStruct[fd];
 

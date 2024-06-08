@@ -189,14 +189,22 @@ fileDescriptor tfs_open(char *name)
 
 int32_t tfs_close(fileDescriptor FD)
 {
-    if(tinyFS->openFileStruct.erase(FD) == 0)
+    if (tinyFS->closeOpenFD(FD) < SUCCESS_TFS_CLOSE)
     {
         return ERROR_TFS_CLOSE;
     }
-
-    tinyFS->freeFileDescriptors.push_back(FD);
-
     return SUCCESS_TFS_CLOSE;
+}
+
+int32_t tfs_delete(fileDescriptor FD)
+{
+    if (tinyFS->openFileStruct.find(FD) != tinyFS->openFileStruct.end())
+    {
+        return ERROR_TFS_DELETE;
+    }    
+    
+    tinyFS->deleteRootDataEntry(tinyFS->openFileStruct[FD].f_inode);
+    tinyFS->deleteFileUpdate(FD);
 }
 
 int32_t tfs_readByte(fileDescriptor FD, char *buffer)
