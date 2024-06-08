@@ -1,0 +1,22 @@
+## Names:
+- Saumitra Tiwari
+- Junior Perez
+
+## Explanation of TinyFS
+- For our tiny file system we covered pretty much all the required functionalities as well as two of the other features that we thought would be useful. We tested all the functionalities with the driver script that interact with it. From What we tested from the driver's code it seems like everything is working as intended.
+
+- For our additional functionality we chose to did the dir - renaming and listing and file time-stamp for access, modification and creation time.
+
+- to show the dir/file listing we have created a few file using the driver script and then called a function that shows us how many files are there on the disk with their name.
+- we also assigned a name of the file and changed it in the script using one of the functions that we have created.
+- for all the time stamps we have been storing the time of action perform on the time and recording the second in 64 bit int data type. To show that it works we also have the function that takes the FD of the file and returns the inode corresponding to that file which contains the all type of access time.
+
+## limitation of the file system
+
+- we have only one fixed bitMap block that corresponds to the each block availaible on the system. If there are more blocks availaible than the bitmap can hold, our fileSystem is not able to utilize the extra space.
+
+- we also have each structure differently setup for each of the block and we are not fully utilizing the remaining space of each of the blocks. So there are lot of internal fragmentation within each block.
+
+- when deleting the file we just mark the bitmap for that block as availaible for next time use. we are actually not clearing the data block which technically means that other type of driver can read the information of the previously stored data.
+
+- 

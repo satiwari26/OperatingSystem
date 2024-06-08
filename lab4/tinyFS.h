@@ -8,6 +8,7 @@
 #include <vector>
 #include <array>
 #include <cmath>
+#include <chrono>
 
 #include "libDisk.h"
 
@@ -53,7 +54,10 @@ typedef struct inode
     int32_t f_offset; // contains the data size of the file
     int32_t f_size;
     int32_t N_dataBlocks;   // contains the number of datablock information
-    char paddedBlock[236];
+    int64_t creationTime;   //stores the creation time
+    int64_t accessTime;   //stores the Access time
+    int64_t modificationTime; //stores the modification time
+    char paddedBlock[212];
 
     /* Default constructor, typically for root inode */
     inode(){
@@ -63,7 +67,7 @@ typedef struct inode
         this->f_size = 0;
         this->N_dataBlocks = 1; // One, for the root inode name-pairs datablock (initially empty datablock, but it exists)
 
-        for(int32_t i = 0; i < 236; i++) {
+        for(int32_t i = 0; i < 212; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
@@ -75,8 +79,18 @@ typedef struct inode
         this->f_size =  size;
         this->f_inode = (int32_t) inode_num;
         this->N_dataBlocks = 0;
+        this->accessTime = 0;
+        this->modificationTime = 0;
 
-        for(int32_t i = 0; i < 236; i++) {
+        //writing the creation time of the Inode file
+        std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+        // Convert the current time point to seconds since the epoch
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> currentTimeInSeconds = std::chrono::time_point_cast<std::chrono::seconds>(currentTime);
+        // Get the number of seconds since the epoch
+        std::chrono::seconds seconds = currentTimeInSeconds.time_since_epoch();
+        this->creationTime = seconds.count();
+
+        for(int32_t i = 0; i < 212; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }
@@ -90,7 +104,7 @@ typedef struct inode
         this->first_dataBlock = -1;
         this->N_dataBlocks = -1;
         
-        for(int32_t i = 0; i < 236; i++) {
+        for(int32_t i = 0; i < 212; i++) {
             this->paddedBlock[i] = '\0'; // Null padding to make the struct 256 bytes
         }
     }

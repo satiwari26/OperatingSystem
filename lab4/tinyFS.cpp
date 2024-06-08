@@ -174,6 +174,20 @@ fileDescriptor tfs_open(char *name)
             }
         }
 
+        //update the access time for the current file Inode
+        std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+        // Convert the current time point to seconds since the epoch
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> currentTimeInSeconds = std::chrono::time_point_cast<std::chrono::seconds>(currentTime);
+        // Get the number of seconds since the epoch
+        std::chrono::seconds seconds = currentTimeInSeconds.time_since_epoch();
+        fileInode.accessTime = seconds.count();
+
+        //update the fileInode by writing it to the disk
+        int inodeFlag = tinyFS->writeInodeBlock(fileInode, fileInode.f_inode);
+        if(inodeFlag < SUCCESS_WRITEDISK){
+            return inodeFlag;
+        }
+
         // Associate a new file descriptor to the file inode and return it to the user
         fileDescriptor tempVirtualFD = tinyFS->getNextVirtualFD();
         tinyFS->setOpenFileStruct(tempVirtualFD, fileInode);  //update the openFileStruct
@@ -272,6 +286,14 @@ int tfs_write(fileDescriptor FD, char *buffer, int size){
     writeFileInode.N_dataBlocks = numBlocksNeeded;
     writeFileInode.f_size = size;
 
+    //update the modification time for the current file Inode
+    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+    // Convert the current time point to seconds since the epoch
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> currentTimeInSeconds = std::chrono::time_point_cast<std::chrono::seconds>(currentTime);
+    // Get the number of seconds since the epoch
+    std::chrono::seconds seconds = currentTimeInSeconds.time_since_epoch();
+    writeFileInode.modificationTime = seconds.count();
+
     int32_t writeInodeResult = tinyFS->writeInodeBlock(writeFileInode, writeFileInode.f_inode);
     if (writeInodeResult < SUCCESS_WRITEDISK)
     {
@@ -315,6 +337,20 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
     if (inode_read_result != SUCCESS_READDISK)
     {
         return inode_read_result; // Throw error returned from disk read
+    }
+
+    //update the access time on the file inode
+    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+    // Convert the current time point to seconds since the epoch
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> currentTimeInSeconds = std::chrono::time_point_cast<std::chrono::seconds>(currentTime);
+    // Get the number of seconds since the epoch
+    std::chrono::seconds seconds = currentTimeInSeconds.time_since_epoch();
+    inodeToRead.accessTime = seconds.count();
+
+    //update the inode table by writing it to the disk
+    int updateInodeData = tinyFS->writeInodeBlock(inodeToRead, inodeToRead.f_inode);
+    if(updateInodeData < SUCCESS_WRITEDISK){
+        return updateInodeData;
     }
 
     // Find the corresponding data block through its index and the offset, to the byte, within that data block
