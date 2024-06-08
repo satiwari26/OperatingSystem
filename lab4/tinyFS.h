@@ -649,3 +649,27 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer);
 /* change the file pointer location to offset (absolute). Returns
 success/error codes.*/
 int32_t tfs_seek(fileDescriptor FD, int32_t offset);
+
+/**************************************************
+ *          EXTRA FEATURES BELOW
+***************************************************/
+
+/********* DIRECTORY LISTING AND RENAMING *********/
+/**
+ * Renames a file. New name should be passed in.
+ * 
+ * @return success/error code 
+*/
+int32_t tfs_rename(fileDescriptor FD, char* name); 
+
+/**
+ * Lists all the files and directories on the disk.
+*/
+void tfs_readdir(void*);
+
+
+/****************** TIMESTAMPS *******************/
+/** 
+ * Returns all information about a file. 
+*/
+inode tfs_stat(fileDescriptor FD);

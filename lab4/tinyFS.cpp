@@ -198,7 +198,7 @@ int32_t tfs_close(fileDescriptor FD)
 
 int32_t tfs_delete(fileDescriptor FD)
 {
-    if (tinyFS->openFileStruct.find(FD) != tinyFS->openFileStruct.end())
+    if (tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end())
     {
         return ERROR_TFS_DELETE;
     }    
@@ -211,7 +211,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 {
     // Check if the file system is mounted (and of the correct type) and that the disk opened successfully
     // tinyFS is null if the mount failed (or has not been called)
-    if (tinyFS == NULL || tinyFS->fd < 0)
+    if (tinyFS == NULL || tinyFS->fd < 0 || tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end())
     {
         return ERROR_TFS_READBYTE;
     }
@@ -281,7 +281,7 @@ int32_t tfs_readByte(fileDescriptor FD, char *buffer)
 
 int tfs_seek(fileDescriptor FD, int offset)
 {
-    if (tinyFS == NULL || tinyFS->fd < 0)
+    if (tinyFS == NULL || tinyFS->fd < 0 || tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end())
     {
         return ERROR_TFS_SEEK;
     }
@@ -302,3 +302,117 @@ int tfs_seek(fileDescriptor FD, int offset)
     return SUCCESS_TFS_SEEK;
 }
 
+int32_t tfs_rename(fileDescriptor FD, char* name)
+{
+    // Check if the file system is mounted (and of the correct type) and that the disk opened successfully
+    // tinyFS is null if the mount failed (or has not been called)
+    // Also make sure that the file is open
+    if (tinyFS == NULL || tinyFS->fd < 0 || tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end())
+    {
+        return ERROR_TFS_RENAMEFILE;
+    }
+
+    // Grab the root node first data block 
+    dataBlock rootNodeData;
+    int32_t curBlockNum = ROOT_NODE_FIRST_DATA_BLOCK;
+    int32_t rootReadResult = readBlock(tinyFS->fd, ROOT_NODE_FIRST_DATA_BLOCK, &rootNodeData);
+    if(rootReadResult < SUCCESS_READDISK) {
+        return rootReadResult;
+    }
+
+    // Search all name-value pairs for the file name
+    while (rootNodeData.nextDataBlock != -1)
+    {
+        // Read the next data block, for use in the NEXT iteration of this while loop
+        dataBlock nextRootNodeData;
+
+        int32_t nextRootReadResult = readBlock(tinyFS->fd, rootNodeData.nextDataBlock, &nextRootNodeData);
+        if(nextRootReadResult < SUCCESS_READDISK) {
+            return nextRootReadResult;
+        }
+
+        for (int curPairOffset = 0; curPairOffset < DATABLOCK_MAXSIZE_BYTES; curPairOffset+=DATABLOCK_ENTRY_SIZE)
+        {
+            char curPairFileName[DATABLOCK_FILENAME_SIZE] = { '\0' }; // Initialized to all null terminator
+            // If the file is equal, then we need to retrieve the corresponding inode number and check if that block
+            // has been allocated on the bitmap (to ensure that it is a stable entry)
+            int32_t curPairInodeNum = -1;
+
+            memcpy(curPairFileName, &rootNodeData.directDataBlock[curPairOffset], DATABLOCK_FILENAME_SIZE);
+            memcpy(&curPairInodeNum, &rootNodeData.directDataBlock[curPairOffset] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
+
+            if (strcmp(name, curPairFileName) == 0 && tinyFS->bit_map.bitmap[curPairInodeNum] == BLOCK_ALLOCATED)
+            {
+                // File exists, so rename it
+                memcpy(&rootNodeData.directDataBlock[curPairOffset], name, DATABLOCK_FILENAME_SIZE);
+                tinyFS->writeDataBlock(rootNodeData, curBlockNum);
+                return SUCCESS_TFS_RENAMEFILE;
+            }
+        }
+        curBlockNum = rootNodeData.nextDataBlock;
+        rootNodeData = nextRootNodeData; // Move onto the next data block to be read
+    }
+    // Else return -1 as the file does not exist (either it's name was not found in the entries or it was not allocated properly)
+    return ERROR_TFS_RENAMEFILE;
+}
+
+void tfs_readdir(void*)
+{
+    // Grab the root node first data block 
+    dataBlock rootNodeData;
+    int32_t rootReadResult = readBlock(tinyFS->fd, ROOT_NODE_FIRST_DATA_BLOCK, &rootNodeData);
+    if(rootReadResult < SUCCESS_READDISK) {
+        return;
+    }
+
+    // Search all name-value pairs for the file name
+    while (rootNodeData.nextDataBlock != -1)
+    {
+        // Read the next data block, for use in the NEXT iteration of this while loop
+        dataBlock nextRootNodeData;
+        int32_t nextRootReadResult = readBlock(tinyFS->fd, rootNodeData.nextDataBlock, &nextRootNodeData);
+        if(nextRootReadResult < SUCCESS_READDISK) {
+            return;
+        }
+
+        // Start listing entries from the root dir
+        cout << "ROOT DIR" << endl;
+        for (int curPairOffset = 0; curPairOffset < DATABLOCK_MAXSIZE_BYTES; curPairOffset+=DATABLOCK_ENTRY_SIZE)
+        {
+            char curPairFileName[DATABLOCK_FILENAME_SIZE] = { '\0' }; // Initialized to all null terminator
+            // If the file is equal, then we need to retrieve the corresponding inode number and check if that block
+            // has been allocated on the bitmap (to ensure that it is a stable entry)
+            int32_t curPairInodeNum = -1;
+
+            memcpy(curPairFileName, &rootNodeData.directDataBlock[curPairOffset], DATABLOCK_FILENAME_SIZE);
+            memcpy(&curPairInodeNum, &rootNodeData.directDataBlock[curPairOffset] + DATABLOCK_FILENAME_SIZE, sizeof(int32_t));
+
+            if (tinyFS->bit_map.bitmap[curPairInodeNum] == BLOCK_ALLOCATED)
+            {
+                cout << "- " << curPairFileName << endl; 
+            }
+        }
+        rootNodeData = nextRootNodeData; // Move onto the next data block to be read
+    }
+}
+
+inode tfs_stat(fileDescriptor FD)
+{
+    // Check if the file system is mounted (and of the correct type) and that the disk opened successfully
+    // tinyFS is null if the mount failed (or has not been called)
+    // Also make sure that the file is open
+    if (tinyFS == NULL || tinyFS->fd < 0 || tinyFS->openFileStruct.find(FD) == tinyFS->openFileStruct.end())
+    {
+        return ERROR_TFS_STAT;
+    }
+
+    inode inodeToStat; /* The inode to stat */
+
+    int inode_read_result = readBlock(tinyFS->fd, tinyFS->openFileStruct[FD].f_inode, (void*) &inodeToStat);
+    if (inode_read_result != SUCCESS_READDISK)
+    {
+        return inode(false); // Throw "null" inode to the user
+    }
+
+    return inodeToStat;
+}
