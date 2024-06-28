@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall -std=c++11
 LDFLAGS =
 
-# Source files
+# Source files - final updates
 LAB4_SRCS = libTinyFS.cpp libDisk.cpp
 # Header files
 LAB4_HDRS = libDisk.h libTinyFS.h errtfs.h macrostfs.h
